@@ -1,0 +1,24 @@
+@use 'variables' as *;
+
+@mixin flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+@mixin icon-mask($x, $y, $size: 24px, $color: currentColor, $height: null) {
+  width: $size;
+  height: if($height, $height, $size);
+  background-color: $color;
+  mask-image: url('@/assets/icons/qlts-icon.svg');
+  mask-repeat: no-repeat;
+  mask-position: $x $y;
+}
+
+@mixin logo-background($x, $y, $size: 24px, $height: null) {
+  width: $size;
+  height: if($height, $height, $size);
+  background-image: url('@/assets/icons/qlts-icon.svg');
+  background-repeat: no-repeat;
+  background-position: $x $y;
+}

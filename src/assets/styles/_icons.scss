@@ -1,0 +1,89 @@
+@use './variables' as *;
+@use './mixins' as *;
+
+.icon {
+  display: inline-block;
+}
+
+// Mask Icons
+.icon-logo {
+  @include logo-background(-20px, -680px, $size: $icon-size-large);
+}
+
+.icon-overview {
+  @include icon-mask(-21px, -153px, $size: $icon-size-medium, $color: $icon-color-default);
+}
+
+.icon-asset {
+  @include icon-mask(-65px, -197px, $size: $icon-size-medium, $color: $icon-color-default);
+}
+
+.icon-road-infrastructure {
+  @include icon-mask(-110px, -153px, $size: $icon-size-medium, $color: $icon-color-default);
+}
+
+.icon-tool {
+  @include icon-mask(-153px, -153px, $size: $icon-size-medium, $color: $icon-color-default);
+}
+
+.icon-category {
+  @include icon-mask(-197px, -155px, $size: $icon-size-medium, $color: $icon-color-default);
+}
+
+.icon-lookup {
+  @include icon-mask(-241px, -153px, $size: $icon-size-medium, $color: $icon-color-default);
+}
+
+.icon-report {
+  @include icon-mask(-329px, -153px, $size: $icon-size-medium, $color: $icon-color-default);
+}
+
+.icon-notification {
+  @include icon-mask(-332px, -109px, $size: $icon-size-medium, $height: 18px);
+}
+
+.icon-extension {
+  @include icon-mask(-199px, -23px, $size: $icon-size-medium, $height: 18px);
+}
+
+.icon-question {
+  @include icon-mask(-67px, -67px, $size: $icon-size-medium, $height: 18px);
+}
+
+.icon-avatar {
+  @include icon-mask(-23px, -23px, $size: $icon-size-medium, $height: 18px);
+}
+
+.icon-bin {
+  @include icon-mask(-463px, -111px, $size: 18px);
+}
+
+.icon-excel {
+  @include icon-mask(-287px, -111px, $size: 18px);
+}
+
+.icon-funnel {
+  @include icon-mask(-243px, -69px, $size: $icon-size-extra-small);
+}
+
+.icon-collapse {
+  @include icon-mask(-285px, -417px, $size: 22px, $color: $icon-color-default);
+}
+
+.icon-rectangle-up {
+  @include icon-mask(-28px, -338px, $size: 8px, $color: black, $height: 5px);
+}
+
+.icon-rectangle-down {
+  @include icon-mask(-72px, -338px, $size: 8px, $color: black, $height: 5px);
+}
+
+.icon-expand-down {
+  @include icon-mask(
+    -158px,
+    -249px,
+    $size: $icon-size-extra-small,
+    $color: $icon-color-default,
+    $height: 7px
+  );
+}
