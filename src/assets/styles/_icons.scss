@@ -78,6 +78,18 @@
   @include icon-mask(-72px, -338px, $size: 8px, $color: black, $height: 5px);
 }
 
+.icon-close {
+  @include icon-mask(-375px, -287px, $size: 18px, $color: black);
+}
+
+.icon-check {
+  @include icon-mask(-160px, -424px, $size: 10px, $height: 8px);
+}
+
+.icon-schedule {
+  @include icon-mask(-287px, -67px, $size: 18px, $color: black);
+}
+
 .icon-expand-down {
   @include icon-mask(
     -158px,

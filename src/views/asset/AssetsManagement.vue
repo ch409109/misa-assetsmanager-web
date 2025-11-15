@@ -17,7 +17,7 @@
         </div>
       </div>
       <div class="toolbar__right">
-        <div class="toolbar__btn-add">+ Thêm tài sản</div>
+        <div class="toolbar__btn-add" @click="openAddAssetModal">+ Thêm tài sản</div>
         <div class="toolbar__btn-import"><span class="icon icon-excel"></span></div>
         <div class="toolbar__btn-delete"><span class="icon icon-bin"></span></div>
       </div>
@@ -80,6 +80,7 @@
       </table>
       <div class="asset-list__footer"></div>
     </div>
+    <AddAssetModal v-if="showAddAssetModal" @close="showAddAssetModal = false" />
   </div>
 </template>
 
@@ -168,7 +169,7 @@
 }
 
 .asset-list {
-  díplay: flex;
+  display: flex;
   flex-direction: column;
 
   &__table {
@@ -260,3 +261,13 @@
   }
 }
 </style>
+
+<script setup>
+import { ref } from 'vue'
+import AddAssetModal from './AddAssetModal.vue'
+const showAddAssetModal = ref(false)
+
+function openAddAssetModal() {
+  showAddAssetModal.value = true
+}
+</script>

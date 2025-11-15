@@ -1,9 +1,34 @@
 // Font family
 $font-stack: Inter, Helvetica, Arial, sans-serif;
 
+// === BRANDING ===
+$color-primary: #1aa4c8;
+
 // Icon size
 $icon-size-extra-small: 14px;
 $icon-size-small: 20px;
 $icon-size-medium: 24px;
 $icon-size-large: 36px;
 $icon-color-default: #c5ccd5;
+
+// === BORDER ===
+$color-border: #aeacac;
+$color-border-hover: #1aa4c8;
+$color-border-focus: #1aa4c8;
+$color-border-error: #e54648;
+
+/* === TEXT === */
+$color-text-title: #000000;
+$color-text-primary: #212121;
+$color-text-secondary: #666666;
+$color-text-disabled: #9e9e9e;
+$color-text-placeholder: #9e9e9e;
+
+/* === BACKGROUND === */
+$color-bg-page: #f2f2f2;
+$color-bg-default: #ffffff;
+$color-bg-hover: #f0f2f5;
+$color-bg-selected: #e3f2fd;
+$color-bg-disabled: #f3f4f6;
+$color-bg-readonly: #ebebeb;
+$color-bg-focus: #eaf7ee;
