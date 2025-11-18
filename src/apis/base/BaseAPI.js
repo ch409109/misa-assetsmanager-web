@@ -1,0 +1,23 @@
+import api from '@/apis/config/APIConfig.js'
+
+export default class BaseAPI {
+  constructor() {
+    this.controller = null
+  }
+
+  getAll(params = {}) {
+    return api.get(`/api/${this.controller}`, { params })
+  }
+
+  update(id, body) {
+    return api.put(`/api/${this.controller}/update/${id}`, body)
+  }
+
+  delete(id) {
+    return api.delete(`/api/${this.controller}/delete/${id}`)
+  }
+
+  create(body) {
+    return api.post(`/api/${this.controller}/create`, body)
+  }
+}

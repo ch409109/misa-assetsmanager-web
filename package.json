@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.8",
+    "axios": "^1.13.2",
     "devextreme": "24.2.11",
     "devextreme-vue": "24.2.11",
     "vue": "^3.5.22",
