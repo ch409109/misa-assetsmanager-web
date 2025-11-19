@@ -19,12 +19,14 @@
                 class="asset-form__input--1"
                 label="Mã tài sản"
                 placeholder="Nhập mã tài sản"
+                v-model="formData.assetCode"
                 required
               />
               <MsInput
                 class="asset-form__input--2"
                 label="Tên tài sản"
                 placeholder="Nhập tên tài sản"
+                v-model="formData.assetName"
                 required
               />
             </div>
@@ -34,14 +36,18 @@
               <MsSelect
                 class="asset-form__input--1"
                 label="Mã bộ phận sử dụng"
-                :options="[
-                  { value: 'type1', text: 'Loại 1' },
-                  { value: 'type2', text: 'Loại 2' },
-                ]"
+                :options="departmentOptions"
+                @change="handleDepartmentChange"
+                v-model="formData.departmentId"
                 placeholder="Chọn mã bộ phận sử dụng"
                 required
               />
-              <MsInput class="asset-form__input--2" label="Tên bộ phận sử dụng" disabled />
+              <MsInput
+                class="asset-form__input--2"
+                label="Tên bộ phận sử dụng"
+                v-model="formData.departmentName"
+                disabled
+              />
             </div>
 
             <!-- Row 3 -->
@@ -49,14 +55,18 @@
               <MsSelect
                 class="asset-form__input--1"
                 label="Mã loại tài sản"
-                :options="[
-                  { value: 'type1', text: 'Loại 1' },
-                  { value: 'type2', text: 'Loại 2' },
-                ]"
+                :options="assetTypeOptions"
+                @change="handleAssetTypeChange"
+                v-model="formData.assetTypeId"
                 placeholder="Chọn mã loại tài sản"
                 required
               />
-              <MsInput class="asset-form__input--2" label="Tên loại tài sản" disabled />
+              <MsInput
+                class="asset-form__input--2"
+                label="Tên loại tài sản"
+                v-model="formData.assetTypeName"
+                disabled
+              />
             </div>
 
             <!-- Row 4 -->
@@ -99,16 +109,19 @@
             <!-- Row 6 -->
             <div class="asset-form__row">
               <MsInput class="asset-form__input--1" label="Số năm sử dụng" required />
-              <MsInput class="asset-form__input--1" label="Giá trị hao mòn năm" required />
-              <div class="asset-form__input--1"></div>
+
+              <div class="asset-form__field-group">
+                <MsInput class="asset-form__input--1" label="Giá trị hao mòn năm" required />
+                <div class="asset-form__input--1"></div>
+              </div>
             </div>
           </form>
         </div>
 
         <!-- Modal Footer -->
         <div class="modal__footer">
-          <div class="modal__btn--cancel">Hủy</div>
-          <div class="modal__btn--save">Lưu</div>
+          <div class="modal__btn--cancel" @click="$emit('close')">Hủy</div>
+          <div class="modal__btn--save" @click="handleSave">Lưu</div>
         </div>
       </div>
     </div>
@@ -221,10 +234,95 @@
 </style>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import MsInput from '@/components/ms-input/MsInput.vue'
 import MsSelect from '@/components/ms-select/MsSelect.vue'
 import MsDatePicker from '@/components/ms-datepicker/MsDatePicker.vue'
+import DepartmentAPI from '@/apis/modules/DepartmentAPI.js'
+import AssetTypeAPI from '@/apis/modules/AssetTypeAPI.js'
+
+const emit = defineEmits(['close', 'save'])
+
+const formData = ref({
+  assetCode: '',
+  assetName: '',
+  departmentId: '',
+  departmentName: '',
+  assetTypeId: '',
+  assetTypeName: '',
+  quantity: 1,
+  originalPrice: 0,
+  depreciationRate: 0,
+  startDate: null,
+  purchaseDate: null,
+  trackingYear: new Date().getFullYear(),
+  usefulLifeYears: 0,
+  annualDepreciationValue: 0,
+})
+
+const departments = ref([])
+const assetTypes = ref([])
+
+const departmentOptions = computed(() =>
+  departments.value.map((dept) => ({
+    value: dept.departmentId,
+    text: dept.departmentCode,
+  })),
+)
+
+const assetTypeOptions = computed(() =>
+  assetTypes.value.map((type) => ({
+    value: type.assetTypeId,
+    text: type.assetTypeCode,
+  })),
+)
+
+const handleDepartmentChange = (selectedOption) => {
+  const department = departments.value.find((dept) => dept.departmentId === selectedOption.value)
+  if (department) {
+    formData.value.departmentName = department.departmentName
+  }
+}
+
+const handleAssetTypeChange = (selectedOption) => {
+  const assetType = assetTypes.value.find((type) => type.assetTypeId === selectedOption.value)
+  if (assetType) {
+    formData.value.assetTypeName = assetType.assetTypeName
+  }
+}
+
+const fetchDepartments = async () => {
+  try {
+    const response = await DepartmentAPI.getAll()
+
+    if (response.data && Array.isArray(response.data)) {
+      departments.value = response.data
+    }
+  } catch (error) {
+    console.error('Error fetching departments:', error)
+  }
+}
+
+const fetchAssetTypes = async () => {
+  try {
+    const response = await AssetTypeAPI.getAll()
+
+    if (response.data && Array.isArray(response.data)) {
+      assetTypes.value = response.data
+    }
+  } catch (error) {
+    console.error('Error fetching asset types:', error)
+  }
+}
+
+const handleSave = () => {
+  emit('save', formData.value)
+}
+
+onMounted(() => {
+  fetchDepartments()
+  fetchAssetTypes()
+})
 
 // Form data
 const startDate = ref(null)

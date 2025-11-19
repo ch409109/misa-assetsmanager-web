@@ -90,6 +90,14 @@
   @include icon-mask(-287px, -67px, $size: 18px, $color: black);
 }
 
+.icon-edit {
+  @include icon-mask(-156px, -68px, $size: 16px);
+}
+
+.icon-clone {
+  @include icon-mask(-244px, -112px, $size: 16px);
+}
+
 .icon-expand-down {
   @include icon-mask(
     -158px,

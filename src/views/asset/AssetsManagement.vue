@@ -48,7 +48,13 @@
           <tr v-else-if="assets.length === 0">
             <td colspan="11" style="text-align: center; padding: 20px">Không có dữ liệu tài sản</td>
           </tr>
-          <tr v-else v-for="(asset, index) in assets" :key="asset.id">
+          <tr
+            v-else
+            v-for="(asset, index) in assets"
+            :key="asset.id"
+            @mouseenter="hoveredRow = index"
+            @mouseleave="hoveredRow = null"
+          >
             <td class="asset-list__checkbox-col">
               <input type="checkbox" class="asset-list__checkbox" />
             </td>
@@ -61,7 +67,20 @@
             <td>{{ formatCurrency(asset.originalCost) }}</td>
             <td>{{ formatCurrency(asset.accumulatedDepreciation) }}</td>
             <td>{{ formatCurrency(asset.remainingValue) }}</td>
-            <td></td>
+            <td class="asset-list__actions">
+              <span
+                v-if="hoveredRow === index"
+                class="icon icon-edit"
+                title="Chỉnh sửa"
+                style="cursor: pointer"
+              ></span>
+              <span
+                v-if="hoveredRow === index"
+                class="icon icon-clone"
+                title="Nhân bản"
+                style="cursor: pointer"
+              ></span>
+            </td>
           </tr>
         </tbody>
         <tfoot>
@@ -91,10 +110,18 @@
             <td colspan="2"></td>
             <td colspan="5" class="asset-list__footer-cell asset-list__footer-right">
               <div class="asset-list__footer-summary">
-                <span><strong>13</strong></span>
-                <span><strong>249.000.000</strong></span>
-                <span><strong>19.716.000</strong></span>
-                <span><strong>229.284.000</strong></span>
+                <span
+                  ><strong>{{ formatNumber(totalQuantity) }}</strong></span
+                >
+                <span
+                  ><strong>{{ formatCurrency(totalOriginalCost) }}</strong></span
+                >
+                <span
+                  ><strong>{{ formatCurrency(totalAccumulatedDepreciation) }}</strong></span
+                >
+                <span
+                  ><strong>{{ formatCurrency(totalRemainingValue) }}</strong></span
+                >
               </div>
             </td>
           </tr>
@@ -258,7 +285,7 @@
       text-overflow: ellipsis;
 
       &:nth-child(3), // Mã tài sản
-      &:nth-child(4), // Tên tài sản  
+      &:nth-child(4), // Tên tài sản
       &:nth-child(5), // Loại tài sản
       &:nth-child(6) {
         // Phòng ban
@@ -292,7 +319,7 @@
       text-overflow: ellipsis;
 
       &:nth-child(3), // Mã tài sản
-      &:nth-child(4), // Tên tài sản  
+      &:nth-child(4), // Tên tài sản
       &:nth-child(5), // Loại tài sản
       &:nth-child(6) {
         // Phòng ban
@@ -310,12 +337,18 @@
       // Căn phải cho các trường số (tiền, số lượng)
       &:nth-child(8),  // Nguyên giá
       &:nth-child(9),  // Khấu hao lũy kế
-      &:nth-child(10), // Giá trị còn lại
+      &:nth-child(10), 
       &:nth-child(11) {
-        // Số lượng
         text-align: right;
       }
     }
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
   }
 
   &__checkbox-col {
@@ -398,6 +431,12 @@ const showAddAssetModal = ref(false)
 const assets = ref([])
 const totalCount = ref(0)
 const loading = ref(false)
+const hoveredRow = ref(null)
+
+const totalQuantity = ref(0)
+const totalOriginalCost = ref(0)
+const totalAccumulatedDepreciation = ref(0)
+const totalRemainingValue = ref(0)
 
 function openAddAssetModal() {
   showAddAssetModal.value = true
@@ -412,6 +451,11 @@ async function fetchAssets() {
     if (response.data.success) {
       assets.value = response.data.data.data
       totalCount.value = response.data.data.totalCount
+
+      totalQuantity.value = response.data.data.totalQuantity
+      totalOriginalCost.value = response.data.data.totalOriginalCost
+      totalAccumulatedDepreciation.value = response.data.data.totalAccumulatedDepreciation
+      totalRemainingValue.value = response.data.data.totalRemainingValue
     } else {
       console.error('Failed to fetch assets:', response.data.message)
     }

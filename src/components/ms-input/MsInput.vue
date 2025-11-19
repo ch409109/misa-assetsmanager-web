@@ -96,6 +96,11 @@ const handleBlur = (event) => {
     outline: none;
   }
 
+  &:disabled {
+    background-color: $color-bg-disabled;
+    cursor: not-allowed;
+  }
+
   &__wrapper {
     display: flex;
     flex-direction: column;

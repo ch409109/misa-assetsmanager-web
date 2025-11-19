@@ -16,7 +16,7 @@
         @keydown.space.prevent="toggleDropdown"
       >
         <span class="ms-select__text" :class="{ 'text-placeholder': !selectedOption }">
-          {{ selectedOption ? selectedOption : placeholder }}
+          {{ selectedOption ? selectedOption.text : placeholder }}
         </span>
         <i class="icon icon-rectangle-down"></i>
       </div>

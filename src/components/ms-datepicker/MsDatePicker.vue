@@ -129,17 +129,17 @@ const handleValueChanged = (e) => {
   width: 100%;
 
   .dx-texteditor {
-    border: 1px solid $color-border;
+    border: 1px solid $color-border !important;
     border-radius: 2.5px;
     background: $color-bg-default;
     height: 36px;
 
     &:hover {
-      border-color: $color-border-hover;
+      border-color: $color-border-hover !important;
     }
 
     &.dx-state-focused {
-      border-color: $color-border-focus;
+      border-color: $color-border-focus !important;
     }
 
     &.dx-state-disabled {
@@ -149,13 +149,15 @@ const handleValueChanged = (e) => {
   }
 
   .dx-texteditor-container {
+    border: 1px solid #aeacac !important;
+
     .dx-texteditor-input-container {
       .dx-texteditor-input {
         height: 36px;
         border-radius: 2.5px;
         font-size: 14px;
         padding: 0 14px;
-        border: none;
+        border: 1px solid $color-border !important;
         color: $color-text-primary;
         background: transparent;
 
