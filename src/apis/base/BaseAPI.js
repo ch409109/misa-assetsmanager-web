@@ -9,6 +9,10 @@ export default class BaseAPI {
     return api.get(`/api/${this.controller}`, { params })
   }
 
+  getById(id) {
+    return api.get(`/api/${this.controller}/${id}`)
+  }
+
   update(id, body) {
     return api.put(`/api/${this.controller}/${id}`, body)
   }

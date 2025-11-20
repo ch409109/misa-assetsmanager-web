@@ -4,7 +4,9 @@
       <div class="modal__container">
         <!-- Modal Header -->
         <div class="modal__header">
-          <div class="modal__title">Thêm tài sản</div>
+          <div class="modal__title">
+            {{ isDuplicateMode ? 'Nhân bản tài sản' : isEditMode ? 'Sửa tài sản' : 'Thêm tài sản' }}
+          </div>
           <div class="modal__close-btn" @click="$emit('close')">
             <span class="icon icon-close"></span>
           </div>
@@ -308,7 +310,20 @@ import DepartmentAPI from '@/apis/modules/DepartmentAPI.js'
 import AssetTypeAPI from '@/apis/modules/AssetTypeAPI.js'
 import AssetAPI from '@/apis/modules/AssetAPI.js'
 
+const props = defineProps({
+  assetData: {
+    type: Object,
+    default: null,
+  },
+  isDuplicateMode: {
+    type: Boolean,
+    default: false,
+  },
+})
+
 const emit = defineEmits(['close', 'save', 'showToast'])
+
+const isEditMode = computed(() => !!props.assetData && !props.isDuplicateMode)
 
 const formData = ref({
   assetCode: '',
@@ -324,6 +339,7 @@ const formData = ref({
   assetTypeId: '',
   assetTypeName: '',
   depreciationRate: 0,
+  assetUsageYear: 0,
 })
 
 const errors = ref({
@@ -593,19 +609,35 @@ const handleSave = async () => {
       assetAnnualDepreciation: Number(formData.value.assetAnnualDepreciation),
       departmentId: formData.value.departmentId,
       assetTypeId: formData.value.assetTypeId,
+      assetUsageYear: Number(formData.value.assetUsageYear),
     }
 
-    const response = await AssetAPI.create(payload)
+    let response
 
-    if (response.data.success) {
+    if (isEditMode.value) {
+      response = await AssetAPI.update(props.assetData.assetId, payload)
+    } else {
+      response = await AssetAPI.create(payload)
+    }
+
+    if (response && response.status >= 200 && response.status < 300) {
+      const message = isEditMode.value
+        ? 'Cập nhật dữ liệu thành công'
+        : props.isDuplicateMode
+          ? 'Nhân bản tài sản thành công'
+          : 'Lưu dữ liệu thành công'
+
       emit('showToast', {
-        message: 'Lưu dữ liệu thành công',
+        message,
         type: 'success',
       })
       emit('save', formData.value)
       emit('close')
     } else {
-      console.error('Error saving asset:', response.data.message)
+      emit('showToast', {
+        message: response.data.message || 'Có lỗi xảy ra',
+        type: 'error',
+      })
     }
   } catch (error) {
     emit('showToast', {
@@ -626,9 +658,69 @@ const fetchNewAssetCode = async () => {
   }
 }
 
+const loadAssetData = async () => {
+  if (props.assetData) {
+    formData.value = {
+      assetId: props.assetData.assetId,
+      assetCode: props.assetData.assetCode,
+      assetName: props.assetData.assetName,
+      assetPurchaseDate: props.assetData.assetPurchaseDate,
+      assetUsageStartDate: props.assetData.assetUsageStartDate,
+      assetTrackingStartYear: props.assetData.assetTrackingStartYear,
+      assetQuantity: props.assetData.assetQuantity,
+      assetOriginalCost: props.assetData.assetOriginalCost,
+      assetAnnualDepreciation: props.assetData.assetAnnualDepreciation,
+      departmentId: props.assetData.departmentId,
+      departmentName: '',
+      assetTypeId: props.assetData.assetTypeId,
+      assetTypeName: '',
+      depreciationRate: 0,
+      assetUsageYear: props.assetData.assetUsageYear || 0,
+    }
+
+    if (props.isDuplicateMode) {
+      await fetchNewAssetCode()
+    }
+
+    const dept = departments.value.find((d) => d.departmentId === props.assetData.departmentId)
+    if (dept) {
+      formData.value.departmentName = dept.departmentName
+    }
+
+    const assetType = assetTypes.value.find((at) => at.assetTypeId === props.assetData.assetTypeId)
+    if (assetType) {
+      formData.value.assetTypeName = assetType.assetTypeName
+      formData.value.depreciationRate = assetType.depreciationRate
+
+      if (!formData.value.assetUsageYear) {
+        formData.value.assetUsageYear = assetType.depreciationYear || assetType.assetUsageYear || 0
+      }
+
+      if (!formData.value.assetAnnualDepreciation) {
+        calculateAnnualDepreciation()
+      }
+    }
+  }
+}
+
+watch(
+  [() => props.assetData, departments, assetTypes],
+  () => {
+    if (props.assetData && departments.value.length > 0 && assetTypes.value.length > 0) {
+      loadAssetData()
+    }
+  },
+  { immediate: true },
+)
+
 onMounted(() => {
   fetchDepartments()
   fetchAssetTypes()
-  fetchNewAssetCode()
+
+  if (isEditMode.value) {
+    loadAssetData()
+  } else {
+    fetchNewAssetCode()
+  }
 })
 </script>

@@ -3,23 +3,43 @@
     <div class="toolbar">
       <div class="toolbar__left">
         <div class="toolbar__search">
-          <input type="text" placeholder="Tìm kiếm tài sản" class="toolbar__search-input" />
+          <MsInput
+            v-model="searchKeyword"
+            placeholder="Tìm kiếm tài sản"
+            @input="handleSearchInput"
+          >
+            <template #prefix>
+              <i class="icon icon-search"></i>
+            </template>
+          </MsInput>
         </div>
         <div class="toolbar__filter">
-          <select class="toolbar__filter-select">
-            <option>Loại tài sản</option>
-          </select>
+          <MsSelect
+            :options="assetTypeFilterOptions"
+            v-model="filters.assetTypeId"
+            placeholder="Loại tài sản"
+            @change="handleFilterChange"
+          />
         </div>
         <div class="toolbar__filter">
-          <select class="toolbar__filter-select">
-            <option>Bộ phận sử dụng</option>
-          </select>
+          <MsSelect
+            :options="departmentFilterOptions"
+            v-model="filters.departmentId"
+            placeholder="Bộ phận sử dụng"
+            @change="handleFilterChange"
+          />
         </div>
       </div>
       <div class="toolbar__right">
         <div class="toolbar__btn-add" @click="openAddAssetModal">+ Thêm tài sản</div>
         <div class="toolbar__btn-import"><span class="icon icon-excel"></span></div>
-        <div class="toolbar__btn-delete"><span class="icon icon-bin"></span></div>
+        <div
+          class="toolbar__btn-delete"
+          @click="handleDeleteMultiple"
+          :class="{ 'toolbar__btn-delete--disabled': selectedAssets.length === 0 }"
+        >
+          <span class="icon icon-bin"></span>
+        </div>
       </div>
     </div>
     <div class="asset-list">
@@ -27,7 +47,12 @@
         <thead>
           <tr>
             <th class="asset-list__checkbox-col">
-              <input type="checkbox" class="asset-list__checkbox" />
+              <input
+                type="checkbox"
+                class="asset-list__checkbox"
+                @change="toggleSelectAll"
+                :checked="isAllSelected"
+              />
             </th>
             <th>STT</th>
             <th>Mã tài sản</th>
@@ -51,12 +76,18 @@
           <tr
             v-else
             v-for="(asset, index) in assets"
-            :key="asset.id"
+            :key="asset.assetId"
             @mouseenter="hoveredRow = index"
             @mouseleave="hoveredRow = null"
           >
             <td class="asset-list__checkbox-col">
-              <input type="checkbox" class="asset-list__checkbox" />
+              <input
+                type="checkbox"
+                class="asset-list__checkbox"
+                :value="asset.assetId"
+                v-model="selectedAssets"
+                @click.stop
+              />
             </td>
             <td>{{ index + 1 }}</td>
             <td>{{ asset.assetCode }}</td>
@@ -73,12 +104,14 @@
                 class="icon icon-edit"
                 title="Chỉnh sửa"
                 style="cursor: pointer"
+                @click="openEditModal(asset)"
               ></span>
               <span
                 v-if="hoveredRow === index"
                 class="icon icon-clone"
                 title="Nhân bản"
                 style="cursor: pointer"
+                @click="openDuplicateModal(asset)"
               ></span>
             </td>
           </tr>
@@ -90,21 +123,36 @@
                 <span
                   >Tổng số: <strong>{{ totalCount }}</strong> bản ghi</span
                 >
-                <select class="asset-list__footer-select">
-                  <option>20</option>
-                  <option>50</option>
-                  <option>100</option>
+                <select
+                  class="asset-list__footer-select"
+                  :value="pageSize"
+                  @change="changePageSize"
+                >
+                  <option :value="20">20</option>
+                  <option :value="50">50</option>
+                  <option :value="100">100</option>
                 </select>
               </div>
             </td>
             <td colspan="2" class="asset-list__footer-cell asset-list__footer-center">
               <div class="asset-list__footer-pagination">
-                <button>&lt;</button>
-                <button>1</button>
-                <button>2</button>
-                <span>...</span>
-                <button>10</button>
-                <button>&gt;</button>
+                <button @click="previousPage" :disabled="pageNumber === 1">&lt;</button>
+                <button
+                  v-for="page in displayPages"
+                  :key="page"
+                  @click="goToPage(page)"
+                  :class="{ active: page === pageNumber }"
+                >
+                  {{ page }}
+                </button>
+                <span v-if="displayPages[displayPages.length - 1] < totalPages">...</span>
+                <button
+                  v-if="displayPages[displayPages.length - 1] < totalPages"
+                  @click="goToPage(totalPages)"
+                >
+                  {{ totalPages }}
+                </button>
+                <button @click="nextPage" :disabled="pageNumber === totalPages">&gt;</button>
               </div>
             </td>
             <td colspan="2"></td>
@@ -131,7 +179,9 @@
     </div>
     <AddAssetModal
       v-if="showAddAssetModal"
-      @close="showAddAssetModal = false"
+      :assetData="selectedAsset"
+      :isDuplicateMode="isDuplicateMode"
+      @close="closeModal"
       @showToast="handleShowToast"
       @save="handleAssetSaved"
     />
@@ -162,26 +212,6 @@
   &__left {
     display: flex;
     align-items: center;
-  }
-
-  &__search-input {
-    background-color: #ffffff;
-    border-radius: 2.5px;
-    border: 1px solid #afafaf;
-    width: 179px;
-    height: 35px;
-    overflow: hidden;
-    margin-right: 12px;
-  }
-
-  &__filter-select {
-    background-color: #ffffff;
-    border-radius: 2.5px;
-    border: 1px solid #afafaf;
-    width: 219px;
-    height: 35px;
-    overflow: hidden;
-    margin-right: 12px;
   }
 
   &__right {
@@ -225,6 +255,37 @@
     cursor: pointer;
     margin-left: 12px;
     color: red;
+  }
+
+  &__search {
+    margin-right: 12px;
+    width: 250px;
+
+    // Override styles cho MsInput trong toolbar
+    ::v-deep .ms-input__wrapper {
+      gap: 0;
+    }
+
+    ::v-deep .ms-input {
+      height: 35px;
+      padding-left: 35px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath fill='%23666' d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: 10px center;
+    }
+  }
+
+  &__filter {
+    margin-right: 12px;
+    width: 219px;
+
+    ::v-deep .ms-select {
+      height: 35px;
+
+      &__trigger {
+        height: 35px;
+      }
+    }
   }
 }
 
@@ -364,6 +425,37 @@
     cursor: pointer;
   }
 
+  &__footer-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    button {
+      border: 1px solid #afafaf;
+      border-radius: 3px;
+      padding: 4px 8px;
+      background-color: #ffffff;
+      cursor: pointer;
+      min-width: 32px;
+
+      &:hover:not(:disabled) {
+        background-color: #f0f0f0;
+      }
+
+      &.active {
+        background-color: #1aa4c8;
+        color: #ffffff;
+        border-color: #1aa4c8;
+      }
+
+      &:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+    }
+  }
+
   &__footer-cell {
     padding: 12px;
     height: 50px;
@@ -425,12 +517,18 @@
 </style>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import AddAssetModal from './AddAssetModal.vue'
 import MsToast from '@/components/ms-toast/MsToast.vue'
 import AssetAPI from '@/apis/modules/AssetAPI.js'
+import MsSelect from '@/components/ms-select/MsSelect.vue'
+import DepartmentAPI from '@/apis/modules/DepartmentAPI.js'
+import AssetTypeAPI from '@/apis/modules/AssetTypeAPI.js'
+import MsInput from '@/components/ms-input/MsInput.vue'
 
 const showAddAssetModal = ref(false)
+const selectedAsset = ref(null)
+const isDuplicateMode = ref(false)
 const assets = ref([])
 const totalCount = ref(0)
 const loading = ref(false)
@@ -441,8 +539,204 @@ const totalOriginalCost = ref(0)
 const totalAccumulatedDepreciation = ref(0)
 const totalRemainingValue = ref(0)
 
+const selectedAssets = ref([])
+
+const pageSize = ref(12)
+const pageNumber = ref(1)
+
+const filters = ref({
+  assetTypeId: '',
+  departmentId: '',
+})
+
+const departments = ref([])
+const assetTypes = ref([])
+
+const searchKeyword = ref('')
+let searchTimeout = null
+
+function handleSearchInput() {
+  if (searchTimeout) {
+    clearTimeout(searchTimeout)
+  }
+
+  searchTimeout = setTimeout(() => {
+    pageNumber.value = 1
+    fetchAssets()
+  }, 500)
+}
+
+const departmentFilterOptions = computed(() => [
+  { value: '', text: 'Tất cả bộ phận' },
+  ...departments.value.map((dept) => ({
+    value: dept.departmentId,
+    text: dept.departmentName,
+  })),
+])
+
+const assetTypeFilterOptions = computed(() => [
+  { value: '', text: 'Tất cả loại tài sản' },
+  ...assetTypes.value.map((type) => ({
+    value: type.assetTypeId,
+    text: type.assetTypeName,
+  })),
+])
+
+function handleFilterChange() {
+  pageNumber.value = 1
+  fetchAssets()
+}
+
+const totalPages = computed(() => {
+  return Math.ceil(totalCount.value / pageSize.value)
+})
+
+const displayPages = computed(() => {
+  const pages = []
+  const maxPagesToShow = 5
+  const half = Math.floor(maxPagesToShow / 2)
+
+  let start = Math.max(1, pageNumber.value - half)
+  let end = Math.min(totalPages.value, start + maxPagesToShow - 1)
+
+  if (end - start < maxPagesToShow - 1) {
+    start = Math.max(1, end - maxPagesToShow + 1)
+  }
+
+  for (let i = start; i <= end; i++) {
+    pages.push(i)
+  }
+
+  return pages
+})
+
+const isAllSelected = computed(() => {
+  return assets.value.length > 0 && selectedAssets.value.length === assets.value.length
+})
+
+function toggleSelectAll(event) {
+  if (event.target.checked) {
+    selectedAssets.value = assets.value.map((asset) => asset.assetId)
+  } else {
+    selectedAssets.value = []
+  }
+}
+
+async function handleDeleteMultiple() {
+  if (selectedAssets.value.length === 0) {
+    handleShowToast({
+      message: 'Vui lòng chọn ít nhất 1 tài sản để xóa',
+      type: 'error',
+    })
+    return
+  }
+
+  const confirmed = confirm(
+    `Bạn có chắc chắn muốn xóa ${selectedAssets.value.length} tài sản đã chọn?`,
+  )
+
+  if (!confirmed) {
+    return
+  }
+
+  try {
+    loading.value = true
+
+    const response = await AssetAPI.deleteMultiple(selectedAssets.value)
+
+    if (response.data.success) {
+      handleShowToast({
+        message: `Đã xóa ${response.data.data} tài sản thành công`,
+        type: 'success',
+      })
+
+      selectedAssets.value = []
+      await fetchAssets()
+    } else {
+      handleShowToast({
+        message: response.data.userMessage || 'Có lỗi xảy ra khi xóa tài sản',
+        type: 'error',
+      })
+    }
+  } catch (error) {
+    console.error('Error deleting assets:', error)
+    handleShowToast({
+      message: error.response?.data?.userMessage || 'Lỗi khi xóa tài sản',
+      type: 'error',
+    })
+  } finally {
+    loading.value = false
+  }
+}
+
 function openAddAssetModal() {
   showAddAssetModal.value = true
+  selectedAsset.value = null
+  isDuplicateMode.value = false
+}
+
+async function openEditModal(asset) {
+  try {
+    loading.value = true
+
+    const response = await AssetAPI.getById(asset.assetId)
+
+    if (response.data.success) {
+      selectedAsset.value = response.data.data
+      isDuplicateMode.value = false
+      showAddAssetModal.value = true
+    } else {
+      handleShowToast({
+        message: 'Không tải được dữ liệu tài sản',
+        type: 'error',
+      })
+    }
+  } catch (error) {
+    console.error('Error fetching asset detail:', error)
+    handleShowToast({
+      message: 'Lỗi khi lấy thông tin tài sản',
+      type: 'error',
+    })
+  } finally {
+    loading.value = false
+  }
+}
+
+async function openDuplicateModal(asset) {
+  try {
+    loading.value = true
+
+    const response = await AssetAPI.getById(asset.assetId)
+
+    if (response.data.success) {
+      selectedAsset.value = response.data.data
+      isDuplicateMode.value = true
+      showAddAssetModal.value = true
+    } else {
+      handleShowToast({
+        message: 'Không tải được dữ liệu tài sản',
+        type: 'error',
+      })
+    }
+  } catch (error) {
+    console.error('Error fetching asset detail:', error)
+    handleShowToast({
+      message: 'Lỗi khi lấy thông tin tài sản',
+      type: 'error',
+    })
+  } finally {
+    loading.value = false
+  }
+}
+
+function closeModal() {
+  showAddAssetModal.value = false
+  selectedAsset.value = null
+  isDuplicateMode.value = false
+}
+
+async function handleAssetSaved() {
+  await fetchAssets()
 }
 
 const toast = ref({
@@ -459,15 +753,64 @@ function handleShowToast({ message, type }) {
   }
 }
 
-async function handleAssetSaved() {
-  await fetchAssets()
+function goToPage(page) {
+  if (page >= 1 && page <= totalPages.value) {
+    pageNumber.value = page
+    fetchAssets()
+  }
+}
+
+function previousPage() {
+  if (pageNumber.value > 1) {
+    pageNumber.value--
+    fetchAssets()
+  }
+}
+
+function nextPage() {
+  if (pageNumber.value < totalPages.value) {
+    pageNumber.value++
+    fetchAssets()
+  }
+}
+
+function changePageSize(event) {
+  pageSize.value = parseInt(event.target.value)
+  pageNumber.value = 1
+  fetchAssets()
 }
 
 async function fetchAssets() {
   loading.value = true
   try {
-    loading.value = true
-    const response = await AssetAPI.getAll()
+    const params = {
+      pageSize: pageSize.value,
+      pageNumber: pageNumber.value,
+    }
+
+    if (searchKeyword.value && searchKeyword.value.trim() !== '') {
+      params.keyword = searchKeyword.value.trim()
+    }
+
+    if (filters.value.assetTypeId) {
+      const selectedAssetType = assetTypes.value.find(
+        (type) => type.assetTypeId === filters.value.assetTypeId,
+      )
+      if (selectedAssetType) {
+        params.assetTypeName = selectedAssetType.assetTypeName
+      }
+    }
+
+    if (filters.value.departmentId) {
+      const selectedDepartment = departments.value.find(
+        (dept) => dept.departmentId === filters.value.departmentId,
+      )
+      if (selectedDepartment) {
+        params.departmentName = selectedDepartment.departmentName
+      }
+    }
+
+    const response = await AssetAPI.getAll(params)
 
     if (response.data.success) {
       assets.value = response.data.data.data
@@ -487,6 +830,28 @@ async function fetchAssets() {
   }
 }
 
+async function fetchDepartments() {
+  try {
+    const response = await DepartmentAPI.getAll()
+    if (response.data && Array.isArray(response.data)) {
+      departments.value = response.data
+    }
+  } catch (error) {
+    console.error('Error fetching departments:', error)
+  }
+}
+
+async function fetchAssetTypes() {
+  try {
+    const response = await AssetTypeAPI.getAll()
+    if (response.data && Array.isArray(response.data)) {
+      assetTypes.value = response.data
+    }
+  } catch (error) {
+    console.error('Error fetching asset types:', error)
+  }
+}
+
 function formatCurrency(value) {
   return new Intl.NumberFormat('vi-VN').format(value)
 }
@@ -497,5 +862,7 @@ function formatNumber(value) {
 
 onMounted(() => {
   fetchAssets()
+  fetchDepartments()
+  fetchAssetTypes()
 })
 </script>

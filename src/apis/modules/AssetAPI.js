@@ -10,6 +10,10 @@ class AssetAPI extends BaseAPI {
   getNewAssetCode() {
     return api.get(`/api/${this.controller}/new-code`)
   }
+
+  deleteMultiple(ids) {
+    return api.delete(`/api/${this.controller}/delete-multiple`, { data: ids })
+  }
 }
 
 export default new AssetAPI()
