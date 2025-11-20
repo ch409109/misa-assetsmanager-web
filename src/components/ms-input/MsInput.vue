@@ -87,6 +87,14 @@ const handleBlur = (event) => {
     font-style: italic;
   }
 
+  &.error {
+    border-color: $color-border-error;
+  }
+
+  &:hover:not(.error) {
+    border-color: $color-border-hover;
+  }
+
   &:hover {
     border-color: $color-border-hover;
   }
@@ -94,6 +102,10 @@ const handleBlur = (event) => {
   &:focus {
     border-color: $color-border-focus;
     outline: none;
+
+    &.error {
+      border-color: $color-border-error;
+    }
   }
 
   &:disabled {
@@ -122,7 +134,7 @@ const handleBlur = (event) => {
   &__error {
     font-size: 12px;
     color: red;
-    margin-top: 8px;
+    margin-top: -4px;
   }
 }
 </style>

@@ -10,14 +10,14 @@ export default class BaseAPI {
   }
 
   update(id, body) {
-    return api.put(`/api/${this.controller}/update/${id}`, body)
+    return api.put(`/api/${this.controller}/${id}`, body)
   }
 
   delete(id) {
-    return api.delete(`/api/${this.controller}/delete/${id}`)
+    return api.delete(`/api/${this.controller}/${id}`)
   }
 
   create(body) {
-    return api.post(`/api/${this.controller}/create`, body)
+    return api.post(`/api/${this.controller}/new`, body)
   }
 }

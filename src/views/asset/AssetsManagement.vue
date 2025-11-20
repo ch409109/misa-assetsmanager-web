@@ -46,7 +46,7 @@
             <td colspan="11" style="text-align: center; padding: 20px">Đang tải dữ liệu...</td>
           </tr>
           <tr v-else-if="assets.length === 0">
-            <td colspan="11" style="text-align: center; padding: 20px">Không có dữ liệu tài sản</td>
+            <td colspan="11" style="text-align: center; padding: 20px">Không có dữ liệu</td>
           </tr>
           <tr
             v-else
@@ -129,7 +129,18 @@
       </table>
       <div class="asset-list__footer"></div>
     </div>
-    <AddAssetModal v-if="showAddAssetModal" @close="showAddAssetModal = false" />
+    <AddAssetModal
+      v-if="showAddAssetModal"
+      @close="showAddAssetModal = false"
+      @showToast="handleShowToast"
+      @save="handleAssetSaved"
+    />
+    <MsToast
+      :type="toast.type"
+      :message="toast.message"
+      :show="toast.show"
+      @close="toast.show = false"
+    />
   </div>
 </template>
 
@@ -284,28 +295,23 @@
       overflow: hidden;
       text-overflow: ellipsis;
 
-      &:nth-child(3), // Mã tài sản
-      &:nth-child(4), // Tên tài sản
-      &:nth-child(5), // Loại tài sản
+      &:nth-child(3),
+      &:nth-child(4),
+      &:nth-child(5),
       &:nth-child(6) {
-        // Phòng ban
         text-align: left;
       }
 
-      // Căn giữa cho checkbox, STT và ngày tháng
-      &:nth-child(1), // Checkbox
-      &:nth-child(2), // STT
+      &:nth-child(1),
+      &:nth-child(2),
       &:nth-child(7) {
-        // Ngày mua/Ngày sử dụng
         text-align: center;
       }
 
-      // Căn phải cho các cột số (tiền, số lượng)
-      &:nth-child(8),  // Nguyên giá
-      &:nth-child(9),  // Khấu hao lũy kế
-      &:nth-child(10), // Giá trị còn lại
+      &:nth-child(8),
+      &:nth-child(9),
+      &:nth-child(10),
       &:nth-child(11) {
-        // Số lượng
         text-align: right;
       }
     }
@@ -318,26 +324,22 @@
       overflow: hidden;
       text-overflow: ellipsis;
 
-      &:nth-child(3), // Mã tài sản
-      &:nth-child(4), // Tên tài sản
-      &:nth-child(5), // Loại tài sản
+      &:nth-child(3),
+      &:nth-child(4),
+      &:nth-child(5),
       &:nth-child(6) {
-        // Phòng ban
         text-align: left;
       }
 
-      // Căn giữa cho checkbox, STT và ngày tháng
-      &:nth-child(1), // Checkbox
-      &:nth-child(2), // STT
+      &:nth-child(1),
+      &:nth-child(2),
       &:nth-child(7) {
-        // Ngày mua/Ngày sử dụng (nếu có)
         text-align: center;
       }
 
-      // Căn phải cho các trường số (tiền, số lượng)
-      &:nth-child(8),  // Nguyên giá
-      &:nth-child(9),  // Khấu hao lũy kế
-      &:nth-child(10), 
+      &:nth-child(8),
+      &:nth-child(9),
+      &:nth-child(10),
       &:nth-child(11) {
         text-align: right;
       }
@@ -425,6 +427,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import AddAssetModal from './AddAssetModal.vue'
+import MsToast from '@/components/ms-toast/MsToast.vue'
 import AssetAPI from '@/apis/modules/AssetAPI.js'
 
 const showAddAssetModal = ref(false)
@@ -440,6 +443,24 @@ const totalRemainingValue = ref(0)
 
 function openAddAssetModal() {
   showAddAssetModal.value = true
+}
+
+const toast = ref({
+  show: false,
+  message: '',
+  type: 'success',
+})
+
+function handleShowToast({ message, type }) {
+  toast.value = {
+    show: true,
+    message,
+    type,
+  }
+}
+
+async function handleAssetSaved() {
+  await fetchAssets()
 }
 
 async function fetchAssets() {

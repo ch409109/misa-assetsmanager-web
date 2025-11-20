@@ -98,6 +98,10 @@
   @include icon-mask(-244px, -112px, $size: 16px);
 }
 
+.icon-check-white {
+  @include icon-mask(-71px, -512px, $size: 11px, $height: 8px);
+}
+
 .icon-expand-down {
   @include icon-mask(
     -158px,

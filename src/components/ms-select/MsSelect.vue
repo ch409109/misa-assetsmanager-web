@@ -189,6 +189,12 @@ defineExpose({
       margin-left: 2px;
     }
   }
+
+  &__error {
+    font-size: 12px;
+    color: red;
+    margin-top: -4px;
+  }
 }
 
 .ms-select {
@@ -213,6 +219,20 @@ defineExpose({
 
     &.active {
       border-color: $color-border-focus;
+
+      &.error {
+        border-color: $color-border-error;
+      }
+    }
+
+    &.error {
+      border-color: $color-border-error;
+    }
+
+    &.disabled {
+      background-color: $color-bg-disabled;
+      cursor: not-allowed;
+      opacity: 0.6;
     }
   }
 
