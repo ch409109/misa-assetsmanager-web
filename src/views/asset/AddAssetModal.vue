@@ -184,11 +184,22 @@
 
         <!-- Modal Footer -->
         <div class="modal__footer">
-          <div class="modal__btn--cancel" @click="$emit('close')">Hủy</div>
+          <div class="modal__btn--cancel" @click="handleCloseModal">Hủy</div>
           <div class="modal__btn--save" @click="handleSave">Lưu</div>
         </div>
       </div>
     </div>
+
+    <MsConfirmDialog
+      :show="showConfirmDialog"
+      :title="confirmDialog.title"
+      :message="confirmDialog.message"
+      :type="confirmDialog.type"
+      :confirmText="confirmDialog.confirmText"
+      :cancelText="confirmDialog.cancelText"
+      @confirm="handleConfirmAction"
+      @cancel="handleCancelAction"
+    />
   </div>
 </template>
 
@@ -309,6 +320,7 @@ import MsDatePicker from '@/components/ms-datepicker/MsDatePicker.vue'
 import DepartmentAPI from '@/apis/modules/DepartmentAPI.js'
 import AssetTypeAPI from '@/apis/modules/AssetTypeAPI.js'
 import AssetAPI from '@/apis/modules/AssetAPI.js'
+import MsConfirmDialog from '@/components/ms-dialog/MsConfirmDialog.vue'
 
 const props = defineProps({
   assetData: {
@@ -324,6 +336,16 @@ const props = defineProps({
 const emit = defineEmits(['close', 'save', 'showToast'])
 
 const isEditMode = computed(() => !!props.assetData && !props.isDuplicateMode)
+
+const showConfirmDialog = ref(false)
+const confirmDialog = ref({
+  title: '',
+  message: '',
+  type: 'question',
+  confirmText: 'Có',
+  cancelText: 'Không',
+  action: null,
+})
 
 const formData = ref({
   assetCode: '',
@@ -359,6 +381,33 @@ const errors = ref({
 
 const departments = ref([])
 const assetTypes = ref([])
+
+const handleCloseModal = () => {
+  if (!isEditMode.value && !props.isDuplicateMode) {
+    confirmDialog.value = {
+      message: 'Bạn có muốn hủy bỏ khai báo tài sản này?',
+      type: 'warning',
+      confirmText: 'Hủy bỏ',
+      cancelText: 'Không',
+      action: 'close',
+    }
+    showConfirmDialog.value = true
+  } else {
+    emit('close')
+  }
+}
+
+const handleConfirmAction = () => {
+  showConfirmDialog.value = false
+
+  if (confirmDialog.value.action === 'close') {
+    emit('close')
+  }
+}
+
+const handleCancelAction = () => {
+  showConfirmDialog.value = false
+}
 
 const validateForm = () => {
   let isValid = true

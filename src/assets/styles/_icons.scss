@@ -102,6 +102,10 @@
   @include icon-mask(-71px, -512px, $size: 11px, $height: 8px);
 }
 
+.icon-warning {
+  @include icon-mask(-416px, -66px, $size: 24px, $height: 20px);
+}
+
 .icon-expand-down {
   @include icon-mask(
     -158px,
