@@ -9,12 +9,14 @@
           active: isOpen,
           disabled: disabled,
           error: !!errorMessage,
+          'has-prefix-icon': prefixIcon,
         }"
         @click="toggleDropdown"
         tabindex="0"
         @keydown.enter.prevent="toggleDropdown"
         @keydown.space.prevent="toggleDropdown"
       >
+        <i v-if="prefixIcon" :class="['ms-select__prefix-icon', 'icon', prefixIcon]"></i>
         <span class="ms-select__text" :class="{ 'text-placeholder': !selectedOption }">
           {{ selectedOption ? selectedOption.text : placeholder }}
         </span>
@@ -57,6 +59,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
  * @property {boolean} [required=false] - Hiển thị dấu * (bắt buộc) ở label.
  * @property {boolean} [disabled=false] - Vô hiệu hóa select box.
  * @property {string} [errorMessage] - Thông báo lỗi hiển thị bên dưới.
+ * @property {string} [prefixIcon] - Tên class icon hiển thị ở phía trước text.
  * Created By: CongHT - 15/11/2025
  */
 const props = defineProps({
@@ -73,6 +76,7 @@ const props = defineProps({
   required: Boolean,
   disabled: Boolean,
   errorMessage: String,
+  prefixIcon: String,
 })
 
 /**
@@ -267,6 +271,7 @@ defineExpose({
     height: 36px;
     padding: 8px 12px;
     cursor: pointer;
+    font-size: 14px;
 
     &:hover {
       background-color: $color-bg-hover;

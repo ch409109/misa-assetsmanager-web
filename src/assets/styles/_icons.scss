@@ -63,7 +63,7 @@
 }
 
 .icon-funnel {
-  @include icon-mask(-243px, -69px, $size: $icon-size-extra-small);
+  @include icon-mask(-243px, -69px, $size: 17px, $height: 16px);
 }
 
 .icon-collapse {

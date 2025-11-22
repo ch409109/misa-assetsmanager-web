@@ -19,6 +19,7 @@
             v-model="filters.assetTypeId"
             placeholder="Loại tài sản"
             @change="handleFilterChange"
+            prefixIcon="icon icon-funnel"
           />
         </div>
         <div class="toolbar__filter">
@@ -27,6 +28,7 @@
             v-model="filters.departmentId"
             placeholder="Bộ phận sử dụng"
             @change="handleFilterChange"
+            prefixIcon="icon icon-funnel"
           />
         </div>
       </div>
@@ -35,7 +37,7 @@
         <div class="toolbar__btn-import"><span class="icon icon-excel"></span></div>
         <div
           class="toolbar__btn-delete"
-          @click="handleDeleteMultiple"
+          @click="confirmDeleteMultiple"
           :class="{ 'toolbar__btn-delete--disabled': selectedAssets.length === 0 }"
         >
           <span class="icon icon-bin"></span>
@@ -184,6 +186,14 @@
       @close="closeModal"
       @showToast="handleShowToast"
       @save="handleAssetSaved"
+    />
+    <MsConfirmDialog
+      :show="showDeleteConfirm"
+      :message="deleteConfirmMessage"
+      confirmText="Xóa"
+      cancelText="Không"
+      @confirm="handleConfirmDelete"
+      @cancel="handleCancelDelete"
     />
     <MsToast
       :type="toast.type"
@@ -525,6 +535,7 @@ import MsSelect from '@/components/ms-select/MsSelect.vue'
 import DepartmentAPI from '@/apis/modules/DepartmentAPI.js'
 import AssetTypeAPI from '@/apis/modules/AssetTypeAPI.js'
 import MsInput from '@/components/ms-input/MsInput.vue'
+import MsConfirmDialog from '@/components/ms-dialog/MsConfirmDialog.vue'
 
 const showAddAssetModal = ref(false)
 const selectedAsset = ref(null)
@@ -554,6 +565,41 @@ const assetTypes = ref([])
 
 const searchKeyword = ref('')
 let searchTimeout = null
+
+const showDeleteConfirm = ref(false)
+const deleteConfirmMessage = computed(() => {
+  const count = selectedAssets.value.length
+
+  if (count === 0) {
+    return ''
+  } else if (count === 1) {
+    const asset = assets.value.find((a) => a.assetId === selectedAssets.value[0])
+    return `Bạn có muốn xóa tài sản <<${asset?.assetCode} - ${asset?.assetName}>> ?`
+  } else {
+    return `${count} tài sản đã được chọn. Bạn có muốn xóa các tài sản này khỏi danh sách?`
+  }
+})
+
+function confirmDeleteMultiple() {
+  if (selectedAssets.value.length === 0) {
+    handleShowToast({
+      message: 'Vui lòng chọn ít nhất 1 tài sản để xóa',
+      type: 'error',
+    })
+    return
+  }
+
+  showDeleteConfirm.value = true
+}
+
+async function handleConfirmDelete() {
+  showDeleteConfirm.value = false
+  await handleDeleteMultiple()
+}
+
+function handleCancelDelete() {
+  showDeleteConfirm.value = false
+}
 
 function handleSearchInput() {
   if (searchTimeout) {
@@ -623,30 +669,15 @@ function toggleSelectAll(event) {
 }
 
 async function handleDeleteMultiple() {
-  if (selectedAssets.value.length === 0) {
-    handleShowToast({
-      message: 'Vui lòng chọn ít nhất 1 tài sản để xóa',
-      type: 'error',
-    })
-    return
-  }
-
-  const confirmed = confirm(
-    `Bạn có chắc chắn muốn xóa ${selectedAssets.value.length} tài sản đã chọn?`,
-  )
-
-  if (!confirmed) {
-    return
-  }
-
   try {
     loading.value = true
 
     const response = await AssetAPI.deleteMultiple(selectedAssets.value)
 
     if (response.data.success) {
+      const count = selectedAssets.value.length
       handleShowToast({
-        message: `Đã xóa ${response.data.data} tài sản thành công`,
+        message: `Đã xóa ${count} tài sản thành công`,
         type: 'success',
       })
 
