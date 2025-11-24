@@ -33,7 +33,8 @@
         </div>
       </div>
       <div class="toolbar__right">
-        <div class="toolbar__btn-add" @click="openAddAssetModal">+ Thêm tài sản</div>
+        <MsButton variant="main" @click="openAddAssetModal">+ Thêm tài sản</MsButton>
+
         <div class="toolbar__btn-import"><span class="icon icon-excel"></span></div>
         <div
           class="toolbar__btn-delete"
@@ -120,7 +121,7 @@
         </tbody>
         <tfoot>
           <tr>
-            <td colspan="2" class="asset-list__footer-cell">
+            <td colspan="3" class="asset-list__footer-cell">
               <div class="asset-list__footer-left">
                 <span
                   >Tổng số: <strong>{{ totalCount }}</strong> bản ghi</span
@@ -157,7 +158,7 @@
                 <button @click="nextPage" :disabled="pageNumber === totalPages">&gt;</button>
               </div>
             </td>
-            <td colspan="2"></td>
+            <td colspan="1"></td>
             <td colspan="5" class="asset-list__footer-cell asset-list__footer-right">
               <div class="asset-list__footer-summary">
                 <span
@@ -229,19 +230,6 @@
     align-items: center;
   }
 
-  &__btn-add {
-    background-color: #1aa4c8;
-    border-radius: 3px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.16);
-    width: 110px;
-    height: 36px;
-    overflow: hidden;
-    color: #ffffff;
-    font-size: 13px;
-    @include flex-center;
-    cursor: pointer;
-  }
-
   &__btn-import {
     @include flex-center;
     background-color: #ffffff;
@@ -271,7 +259,6 @@
     margin-right: 12px;
     width: 250px;
 
-    // Override styles cho MsInput trong toolbar
     ::v-deep .ms-input__wrapper {
       gap: 0;
     }
@@ -477,6 +464,7 @@
     align-items: center;
     gap: 12px;
     font-size: 14px;
+    padding-left: 6px;
   }
 
   &__footer-select {
@@ -536,6 +524,7 @@ import DepartmentAPI from '@/apis/modules/DepartmentAPI.js'
 import AssetTypeAPI from '@/apis/modules/AssetTypeAPI.js'
 import MsInput from '@/components/ms-input/MsInput.vue'
 import MsConfirmDialog from '@/components/ms-dialog/MsConfirmDialog.vue'
+import MsButton from '@/components/ms-button/MsButton.vue'
 
 const showAddAssetModal = ref(false)
 const selectedAsset = ref(null)
@@ -613,7 +602,7 @@ function handleSearchInput() {
 }
 
 const departmentFilterOptions = computed(() => [
-  { value: '', text: 'Tất cả bộ phận' },
+  { value: '', text: 'Bộ phận sử dụng' },
   ...departments.value.map((dept) => ({
     value: dept.departmentId,
     text: dept.departmentName,
@@ -621,7 +610,7 @@ const departmentFilterOptions = computed(() => [
 ])
 
 const assetTypeFilterOptions = computed(() => [
-  { value: '', text: 'Tất cả loại tài sản' },
+  { value: '', text: 'Loại tài sản' },
   ...assetTypes.value.map((type) => ({
     value: type.assetTypeId,
     text: type.assetTypeName,

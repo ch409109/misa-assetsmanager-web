@@ -94,27 +94,28 @@
                 v-model="formData.assetQuantity"
                 required
                 @blur="validateField('assetQuantity')"
+                textAlign="right"
               />
               <div class="asset-form__field-group">
                 <MsInput
                   class="asset-form__input--1"
-                  type="number"
                   label="Nguyên giá"
                   :error="!!errors.assetOriginalCost"
                   :errorMessage="errors.assetOriginalCost"
                   v-model="formData.assetOriginalCost"
                   required
                   @blur="validateField('assetOriginalCost')"
+                  textAlign="right"
                 />
                 <MsInput
                   class="asset-form__input--1"
-                  type="number"
                   label="Tỉ lệ hao mòn (%)"
                   v-model="formData.depreciationRate"
                   :error="!!errors.depreciationRate"
                   :errorMessage="errors.depreciationRate"
                   required
                   @blur="validateField('depreciationRate')"
+                  textAlign="right"
                 />
               </div>
             </div>
@@ -163,18 +164,19 @@
                 :errorMessage="errors.assetUsageYear"
                 required
                 @blur="validateField('assetUsageYear')"
+                textAlign="right"
               />
 
               <div class="asset-form__field-group">
                 <MsInput
                   class="asset-form__input--1"
-                  type="number"
                   label="Giá trị hao mòn năm"
                   required
                   v-model="formData.assetAnnualDepreciation"
                   :error="!!errors.assetAnnualDepreciation"
                   :errorMessage="errors.assetAnnualDepreciation"
                   @blur="validateField('assetAnnualDepreciation')"
+                  textAlign="right"
                 />
                 <div class="asset-form__input--1"></div>
               </div>
@@ -184,8 +186,8 @@
 
         <!-- Modal Footer -->
         <div class="modal__footer">
-          <div class="modal__btn--cancel" @click="handleCloseModal">Hủy</div>
-          <div class="modal__btn--save" @click="handleSave">Lưu</div>
+          <MsButton variant="secondary" @click="handleCloseModal">Hủy</MsButton>
+          <MsButton variant="main" @click="handleSave">Lưu</MsButton>
         </div>
       </div>
     </div>
@@ -197,8 +199,10 @@
       :type="confirmDialog.type"
       :confirmText="confirmDialog.confirmText"
       :cancelText="confirmDialog.cancelText"
+      :rejectText="confirmDialog.rejectText"
       @confirm="handleConfirmAction"
       @cancel="handleCancelAction"
+      @reject="handleRejectAction"
     />
   </div>
 </template>
@@ -225,7 +229,6 @@
     flex-direction: column;
     border-radius: 4px;
     background-color: #ffffff;
-    // padding: 20px 16px 0 16px;
   }
 
   &__header {
@@ -243,6 +246,8 @@
     background-color: #f1f2f5;
     align-items: center;
     flex-shrink: 0;
+    gap: 10px;
+    padding-right: 18px;
   }
 
   &__body {
@@ -262,28 +267,6 @@
   &__close-btn {
     padding-top: 20px;
     padding-right: 16px;
-    cursor: pointer;
-  }
-
-  &__btn--save {
-    background-color: #1aa4c8;
-    border-radius: 4px;
-    color: #ffffff;
-    width: 100px;
-    height: 36px;
-    @include flex-center;
-    cursor: pointer;
-    margin-right: 18px;
-  }
-
-  &__btn--cancel {
-    background-color: #ffffff;
-    border-radius: 4px;
-    color: #000000;
-    width: 100px;
-    height: 36px;
-    margin-right: 10px;
-    @include flex-center;
     cursor: pointer;
   }
 
@@ -321,6 +304,7 @@ import DepartmentAPI from '@/apis/modules/DepartmentAPI.js'
 import AssetTypeAPI from '@/apis/modules/AssetTypeAPI.js'
 import AssetAPI from '@/apis/modules/AssetAPI.js'
 import MsConfirmDialog from '@/components/ms-dialog/MsConfirmDialog.vue'
+import MsButton from '@/components/ms-button/MsButton.vue'
 
 const props = defineProps({
   assetData: {
@@ -339,11 +323,11 @@ const isEditMode = computed(() => !!props.assetData && !props.isDuplicateMode)
 
 const showConfirmDialog = ref(false)
 const confirmDialog = ref({
-  title: '',
   message: '',
   type: 'question',
   confirmText: 'Có',
-  cancelText: 'Không',
+  cancelText: '',
+  rejectText: '',
   action: null,
 })
 
@@ -383,13 +367,24 @@ const departments = ref([])
 const assetTypes = ref([])
 
 const handleCloseModal = () => {
-  if (!isEditMode.value && !props.isDuplicateMode) {
+  if (isEditMode.value) {
+    confirmDialog.value = {
+      message:
+        'Thông tin thay đổi sẽ không được cập nhật nếu bạn không lưu. Bạn có muốn lưu các thay đổi này?',
+      type: 'warning',
+      confirmText: 'Lưu',
+      cancelText: 'Hủy bỏ',
+      rejectText: 'Không lưu',
+      action: 'close-edit',
+    }
+    showConfirmDialog.value = true
+  } else if (!props.isDuplicateMode) {
     confirmDialog.value = {
       message: 'Bạn có muốn hủy bỏ khai báo tài sản này?',
       type: 'warning',
       confirmText: 'Hủy bỏ',
       cancelText: 'Không',
-      action: 'close',
+      action: 'close-new',
     }
     showConfirmDialog.value = true
   } else {
@@ -398,15 +393,26 @@ const handleCloseModal = () => {
 }
 
 const handleConfirmAction = () => {
-  showConfirmDialog.value = false
-
-  if (confirmDialog.value.action === 'close') {
+  if (confirmDialog.value.action === 'close-edit') {
+    showConfirmDialog.value = false
+    handleSave()
+  } else if (confirmDialog.value.action === 'close-new') {
+    showConfirmDialog.value = false
     emit('close')
+  } else if (confirmDialog.value.action === 'warning') {
+    showConfirmDialog.value = false
   }
 }
 
 const handleCancelAction = () => {
   showConfirmDialog.value = false
+}
+
+const handleRejectAction = () => {
+  if (confirmDialog.value.action === 'close-edit') {
+    showConfirmDialog.value = false
+    emit('close')
+  }
 }
 
 const validateForm = () => {
@@ -463,6 +469,15 @@ const validateForm = () => {
     isValid = false
   }
 
+  validateAnnualDepreciation()
+  validateDepreciationRate()
+
+  Object.keys(errors.value).forEach((key) => {
+    if (errors.value[key]) {
+      isValid = false
+    }
+  })
+
   return isValid
 }
 
@@ -513,6 +528,7 @@ const validateField = (fieldName) => {
         errors.value.assetOriginalCost = 'Nguyên giá phải lớn hơn 0'
       } else {
         errors.value.assetOriginalCost = ''
+        validateAnnualDepreciation()
       }
       break
 
@@ -521,6 +537,7 @@ const validateField = (fieldName) => {
         errors.value.depreciationRate = 'Tỉ lệ hao mòn không được để trống'
       } else {
         errors.value.depreciationRate = ''
+        validateDepreciationRate()
       }
       break
 
@@ -545,6 +562,7 @@ const validateField = (fieldName) => {
         errors.value.assetUsageYear = 'Số năm sử dụng phải lớn hơn 0'
       } else {
         errors.value.assetUsageYear = ''
+        validateDepreciationRate()
       }
       break
 
@@ -553,9 +571,81 @@ const validateField = (fieldName) => {
         errors.value.assetAnnualDepreciation = 'Giá trị hao mòn năm không được để trống'
       } else {
         errors.value.assetAnnualDepreciation = ''
+        validateAnnualDepreciation()
       }
       break
   }
+}
+
+const validateDepreciationRate = () => {
+  const usageYear = Number(formData.value.assetUsageYear)
+  const depreciationRate = Number(formData.value.depreciationRate)
+
+  if (usageYear > 0 && depreciationRate > 0) {
+    const expectedRate = 100 / usageYear
+    const tolerance = 0.01 // Cho phép sai số nhỏ (0.01%)
+
+    if (Math.abs(depreciationRate - expectedRate) > tolerance) {
+      errors.value.depreciationRate = `Tỷ lệ hao mòn phải bằng 1/Số năm sử dụng (${expectedRate.toFixed(2)}%)`
+      errors.value.assetUsageYear = `Tỷ lệ hao mòn phải bằng 1/Số năm sử dụng (${expectedRate.toFixed(2)}%)`
+
+      // Hiển thị dialog cảnh báo
+      showWarningDialog(
+        'Tỷ lệ hao mòn phải bằng 1/Số năm sử dụng',
+        `Với số năm sử dụng là ${usageYear} năm, tỷ lệ hao mòn phải là ${expectedRate.toFixed(2)}%`,
+      )
+    } else {
+      // Xóa lỗi nếu hợp lệ
+      if (errors.value.depreciationRate.includes('Tỷ lệ hao mòn phải bằng')) {
+        errors.value.depreciationRate = ''
+      }
+      if (errors.value.assetUsageYear.includes('Tỷ lệ hao mòn phải bằng')) {
+        errors.value.assetUsageYear = ''
+      }
+    }
+  }
+}
+
+/**
+ * Validate: Hao mòn năm <= Nguyên giá
+ */
+const validateAnnualDepreciation = () => {
+  const originalCost = Number(formData.value.assetOriginalCost)
+  const annualDepreciation = Number(formData.value.assetAnnualDepreciation)
+
+  if (originalCost > 0 && annualDepreciation > originalCost) {
+    errors.value.assetAnnualDepreciation = 'Hao mòn năm phải nhỏ hơn hoặc bằng nguyên giá'
+
+    // Hiển thị dialog cảnh báo
+    showWarningDialog(
+      'Hao mòn năm vượt quá nguyên giá',
+      `Hao mòn năm (${formatCurrency(annualDepreciation)}) phải nhỏ hơn hoặc bằng nguyên giá (${formatCurrency(originalCost)})`,
+    )
+  } else {
+    // Xóa lỗi nếu hợp lệ
+    if (errors.value.assetAnnualDepreciation === 'Hao mòn năm phải nhỏ hơn hoặc bằng nguyên giá') {
+      errors.value.assetAnnualDepreciation = ''
+    }
+  }
+}
+
+const showWarningDialog = (title, message) => {
+  confirmDialog.value = {
+    title: title,
+    message: message,
+    type: 'warning',
+    confirmText: 'Đóng',
+    cancelText: '',
+    action: 'warning',
+  }
+  showConfirmDialog.value = true
+}
+
+const formatCurrency = (value) => {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+  }).format(value)
 }
 
 const departmentOptions = computed(() =>
@@ -607,9 +697,40 @@ watch(
 )
 
 watch(
+  () => formData.value.assetUsageYear,
+  () => {
+    if (formData.value.depreciationRate) {
+      validateDepreciationRate()
+    }
+  },
+)
+
+watch(
+  () => formData.value.depreciationRate,
+  () => {
+    if (formData.value.assetUsageYear) {
+      validateDepreciationRate()
+    }
+    calculateAnnualDepreciation()
+  },
+)
+
+watch(
   () => formData.value.assetOriginalCost,
   () => {
     calculateAnnualDepreciation()
+    if (formData.value.assetAnnualDepreciation) {
+      validateAnnualDepreciation()
+    }
+  },
+)
+
+watch(
+  () => formData.value.assetAnnualDepreciation,
+  () => {
+    if (formData.value.assetOriginalCost) {
+      validateAnnualDepreciation()
+    }
   },
 )
 
@@ -689,10 +810,32 @@ const handleSave = async () => {
       })
     }
   } catch (error) {
-    emit('showToast', {
-      message: error.response?.data?.message || 'Lỗi kết nối máy chủ',
-      type: 'error',
-    })
+    if (error.response?.status === 409) {
+      const errorData = error.response.data
+
+      let errorMessage = errorData.userMessage || 'Mã tài sản đã tồn tại'
+
+      if (errorData.validateInfo && errorData.validateInfo.length > 0) {
+        const duplicateValue = errorData.validateInfo.find((info) =>
+          info.includes('Giá trị đã tồn tại:'),
+        )
+        if (duplicateValue) {
+          errorMessage = `Mã tài sản ${formData.value.assetCode} đã tồn tại. Vui lòng nhập mã khác.`
+        }
+      }
+
+      emit('showToast', {
+        message: errorMessage,
+        type: 'error',
+      })
+
+      errors.value.assetCode = errorMessage
+    } else {
+      emit('showToast', {
+        message: error.response?.data?.userMessage || 'Lỗi kết nối máy chủ',
+        type: 'error',
+      })
+    }
   }
 }
 

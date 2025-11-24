@@ -203,12 +203,13 @@ defineExpose({
 
 .ms-select {
   position: relative;
-  height: 36px;
+  height: 35px;
 
   &__trigger {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 10px;
     height: 100%;
     width: 100%;
     padding: 14px;
@@ -241,7 +242,11 @@ defineExpose({
   }
 
   &__text {
-    font-size: 14px;
+    font-size: 13px;
+    text-overflow: ellipsis;
+    white-space: nowrap; 
+    overflow: hidden; 
+    flex: 1;
 
     &.text-placeholder {
       color: $color-text-placeholder;
@@ -268,17 +273,32 @@ defineExpose({
   }
 
   &__option {
-    height: 36px;
+    min-height: 36px;
     padding: 8px 12px;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    line-height: 1.4;
+    word-wrap: break-word;
+    white-space: normal;
+
+    .option-text {
+      flex: 1;
+      padding-right: 8px;
+    }
+
+    .icon-check {
+      flex-shrink: 0;
+    }
 
     &:hover {
       background-color: $color-bg-hover;
     }
 
     &.selected {
-      color: &$color-primary;
+      color: $color-primary;
     }
   }
 }

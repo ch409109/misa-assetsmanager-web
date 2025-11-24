@@ -6,7 +6,7 @@
 
       <div class="header__menu-year">
         <span class="header__menu-year-label">Năm</span>
-        <span class="header__menu-year-value">2021</span>
+        <span class="header__menu-year-value">2025</span>
         <div class="header__menu-year-icon">
           <span class="icon icon-rectangle-up"></span>
           <span class="icon icon-rectangle-down"></span>
@@ -17,7 +17,10 @@
         <span class="icon icon-notification"></span>
         <span class="icon icon-extension"></span>
         <span class="icon icon-question"></span>
-        <span class="icon icon-avatar"></span>
+        <div class="header__menu-avatar">
+          <span class="icon icon-avatar"></span>
+          <div class="icon icon-rectangle-down"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -78,6 +81,21 @@
     &-actions {
       display: flex;
       align-items: center;
+    }
+    
+    &-avatar {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      cursor: pointer;
+
+      .icon-avatar {
+        margin-right: 0px;
+      }
+
+      .icon-rectangle-down {
+        margin-right: 0;
+      }
     }
   }
 }

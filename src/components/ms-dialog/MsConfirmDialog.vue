@@ -8,20 +8,17 @@
           </div>
           <div class="ms-confirm-dialog__message">{{ message }}</div>
         </div>
-        
+
         <div class="ms-confirm-dialog__footer">
-          <button 
-            class="ms-confirm-dialog__btn ms-confirm-dialog__btn--cancel"
-            @click="handleCancel"
-          >
+          <MsButton v-if="cancelText" variant="outline" @click="handleCancel">
             {{ cancelText }}
-          </button>
-          <button 
-            class="ms-confirm-dialog__btn ms-confirm-dialog__btn--confirm"
-            @click="handleConfirm"
-          >
+          </MsButton>
+          <MsButton v-if="rejectText" variant="sub" @click="handleReject">
+            {{ rejectText }}
+          </MsButton>
+          <MsButton variant="main" @click="handleConfirm">
             {{ confirmText }}
-          </button>
+          </MsButton>
         </div>
       </div>
     </div>
@@ -29,6 +26,8 @@
 </template>
 
 <script setup>
+import MsButton from '@/components/ms-button/MsButton.vue'
+
 /**
  * Component props
  * Created by: CongHT - 22/11/2025
@@ -36,27 +35,31 @@
 defineProps({
   show: {
     type: Boolean,
-    default: false
+    default: false,
   },
   message: {
     type: String,
-    required: true
+    required: true,
   },
   confirmText: {
     type: String,
-    default: 'Hủy bỏ'
+    default: 'Hủy bỏ',
   },
   cancelText: {
     type: String,
-    default: 'Không'
-  }
+    default: 'Không',
+  },
+  rejectText: {
+    type: String,
+    default: '',
+  },
 })
 
 /**
  * Component emits
  * Created by: CongHT - 22/11/2025
  */
-const emit = defineEmits(['confirm', 'cancel'])
+const emit = defineEmits(['confirm', 'cancel', 'reject'])
 
 /**
  * Handle confirm action
@@ -72,6 +75,14 @@ const handleConfirm = () => {
  */
 const handleCancel = () => {
   emit('cancel')
+}
+
+/**
+ * Handle reject action
+ * Created by: CongHT - 22/11/2025
+ */
+const handleReject = () => {
+  emit('reject')
 }
 </script>
 
@@ -124,43 +135,6 @@ const handleCancel = () => {
     justify-content: flex-end;
     gap: 8px;
     background-color: #ffffff;
-  }
-
-  &__btn {
-    padding: 8px 16px;
-    border-radius: 4px;
-    border: 1px solid;
-    font-size: 13px;
-    font-weight: 400;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    min-width: 70px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    &--cancel {
-      background-color: #ffffff;
-      border-color: #d1d5db;
-      color: #374151;
-
-      &:hover {
-        background-color: #f9fafb;
-        border-color: #9ca3af;
-      }
-    }
-
-    &--confirm {
-      background-color: #1aa4c8;
-      border-color: #1aa4c8;
-      color: #ffffff;
-
-      &:hover {
-        background-color: #1593b3;
-        border-color: #1593b3;
-      }
-    }
   }
 }
 </style>

@@ -7,7 +7,7 @@
       :value="modelValue"
       :required="required"
       :disabled="disabled"
-      :class="{ error: error }"
+      :class="{ error: error, [`text-${textAlign}`]: textAlign }"
       @input="handleInput"
       @blur="handleBlur"
       class="ms-input"
@@ -42,6 +42,11 @@ defineProps({
   readonly: Boolean,
   error: Boolean,
   errorMessage: String,
+  textAlign: {
+    type: String,
+    default: 'left',
+    validator: (value) => ['left', 'center', 'right'].includes(value),
+  },
 })
 
 /**
@@ -78,6 +83,18 @@ const handleBlur = (event) => {
   border: 1px solid $color-border;
   color: $color-text-primary;
   background: $color-bg-default;
+
+  &.text-left {
+    text-align: left;
+  }
+
+  &.text-center {
+    text-align: center;
+  }
+
+  &.text-right {
+    text-align: right;
+  }
 
   &::placeholder {
     color: $color-text-placeholder;
