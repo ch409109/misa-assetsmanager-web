@@ -315,7 +315,7 @@
   flex-direction: column;
 
   height: 575px;
-  overflow: auto; // Cho phép cuộn khi nội dung dài
+  overflow: auto;
   background-color: #ffffff;
   border-radius: 3.5px;
   border: 1px solid #afafaf;
@@ -397,12 +397,11 @@
       }
 
       &.selected-row {
-        background-color: rgba(26, 164, 200, 0.25); // Màu đậm hơn hover một chút
-        
-        // Nếu muốn checkbox cũng nổi bật hơn
+        background-color: rgba(26, 164, 200, 0.25); 
+
         td:first-child {
-           border-left: 4px solid #1aa4c8; // Thêm vạch màu bên trái để dễ nhìn
-           padding-left: 3px; // Trừ đi độ dày border để không bị lệch
+          border-left: 4px solid #1aa4c8; 
+          padding-left: 3px; 
         }
       }
     }
@@ -473,15 +472,13 @@
     }
 
     tfoot td {
-      // 4. Ghim Footer xuống đáy khi cuộn
       position: sticky;
       bottom: 0;
       z-index: 10;
-      background-color: #ffffff; // Bắt buộc có màu nền để che nội dung trôi qua
-      box-shadow: 0 -1px 0 #c7c7c7; // Tạo đường kẻ trên giả cho footer
-      
-      // Giữ lại fix lỗi dropdown bị che
-      overflow: visible; 
+      background-color: #ffffff; 
+      box-shadow: 0 -1px 0 #c7c7c7;
+
+      overflow: visible;
     }
   }
 
@@ -982,35 +979,22 @@ const lastSelectedIndex = ref(null)
 function handleRowClick(asset, index, event) {
   const assetId = asset.assetId
 
-  // 1. Nếu giữ phím Ctrl (hoặc Command trên Mac)
   if (event.ctrlKey || event.metaKey) {
     if (selectedAssets.value.includes(assetId)) {
-      // Nếu đã chọn -> Bỏ chọn
       selectedAssets.value = selectedAssets.value.filter((id) => id !== assetId)
     } else {
-      // Nếu chưa chọn -> Thêm vào
       selectedAssets.value.push(assetId)
     }
     lastSelectedIndex.value = index
-  }
-  // 2. Nếu giữ phím Shift
-  else if (event.shiftKey && lastSelectedIndex.value !== null) {
+  } else if (event.shiftKey && lastSelectedIndex.value !== null) {
     const start = Math.min(lastSelectedIndex.value, index)
     const end = Math.max(lastSelectedIndex.value, index)
-    
-    // Lấy danh sách ID trong khoảng từ start đến end
+
     const rangeIds = assets.value.slice(start, end + 1).map((a) => a.assetId)
-    
-    // Gộp vào danh sách đang chọn (dùng Set để tránh trùng lặp)
+
     const uniqueIds = new Set([...selectedAssets.value, ...rangeIds])
     selectedAssets.value = Array.from(uniqueIds)
-    
-    // Không cập nhật lastSelectedIndex khi dùng Shift để có thể mở rộng vùng chọn tiếp
-  }
-  // 3. Click thường (chỉ chọn 1 dòng)
-  else {
-    // Nếu click vào dòng đã chọn thì không làm gì (để tránh bỏ chọn nhầm khi muốn drag/drop sau này)
-    // Nhưng ở đây ta làm giống Windows: Click thường sẽ reset chọn duy nhất dòng đó
+  } else {
     selectedAssets.value = [assetId]
     lastSelectedIndex.value = index
   }
