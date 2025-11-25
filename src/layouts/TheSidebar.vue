@@ -6,47 +6,75 @@
     </div>
     <nav class="sidebar__nav">
       <ul class="sidebar__menu">
-        <li class="sidebar__item">
+        <li
+          class="sidebar__item"
+          :class="{ active: route.path === '/overview' }"
+          @click="navigate('/overview')"
+        >
           <div class="sidebar__item-content">
             <span class="icon icon-overview"></span>
             <span class="sidebar__item-text">Tổng quan</span>
           </div>
         </li>
-        <li class="sidebar__item">
+        <li
+          class="sidebar__item"
+          :class="{ active: route.path.includes('/assets') }"
+          @click="navigate('/assets')"
+        >
           <div class="sidebar__item-content">
             <span class="icon icon-asset"></span>
             <span class="sidebar__item-text">Tài sản</span>
           </div>
           <span class="icon icon-expand-down" v-show="!isCollapsed"></span>
         </li>
-        <li class="sidebar__item">
+        <li
+          class="sidebar__item"
+          :class="{ active: route.path === '/infrastructure' }"
+          @click="navigate('/infrastructure')"
+        >
           <div class="sidebar__item-content">
             <span class="icon icon-road-infrastructure"></span>
             <span class="sidebar__item-text">Tài sản HT-DB</span>
           </div>
           <span class="icon icon-expand-down" v-show="!isCollapsed"></span>
         </li>
-        <li class="sidebar__item">
+        <li
+          class="sidebar__item"
+          :class="{ active: route.path === '/tools' }"
+          @click="navigate('/tools')"
+        >
           <div class="sidebar__item-content">
             <span class="icon icon-tool"></span>
             <span class="sidebar__item-text">Công cụ dụng cụ</span>
           </div>
           <span class="icon icon-expand-down" v-show="!isCollapsed"></span>
         </li>
-        <li class="sidebar__item">
+        <li
+          class="sidebar__item"
+          :class="{ active: route.path === '/category' }"
+          @click="navigate('/category')"
+        >
           <div class="sidebar__item-content">
             <span class="icon icon-category"></span>
             <span class="sidebar__item-text">Danh mục</span>
           </div>
         </li>
-        <li class="sidebar__item">
+        <li
+          class="sidebar__item"
+          :class="{ active: route.path === '/search' }"
+          @click="navigate('/search')"
+        >
           <div class="sidebar__item-content">
             <span class="icon icon-lookup"></span>
             <span class="sidebar__item-text">Tra cứu</span>
           </div>
           <span class="icon icon-expand-down" v-show="!isCollapsed"></span>
         </li>
-        <li class="sidebar__item">
+        <li
+          class="sidebar__item"
+          :class="{ active: route.path === '/report' }"
+          @click="navigate('/report')"
+        >
           <div class="sidebar__item-content">
             <span class="icon icon-report"></span>
             <span class="sidebar__item-text">Báo cáo</span>
@@ -130,6 +158,17 @@
       }
     }
 
+    &.active {
+      background-color: #1aa4c8;
+      border-radius: 4px;
+      color: #ffffff;
+      font-weight: 700;
+
+      .icon {
+        filter: brightness(0) invert(1);
+      }
+    }
+
     &-content {
       display: flex;
       align-items: center;
@@ -177,8 +216,15 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 
+const router = useRouter()
+const route = useRoute()
 const isCollapsed = ref(false)
+
+const navigate = (path) => {
+  router.push(path)
+}
 
 const toggleSidebar = () => {
   isCollapsed.value = !isCollapsed.value

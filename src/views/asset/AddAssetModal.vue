@@ -102,7 +102,8 @@
                   label="Nguyên giá"
                   :error="!!errors.assetOriginalCost"
                   :errorMessage="errors.assetOriginalCost"
-                  v-model="formData.assetOriginalCost"
+                  :modelValue="formData.assetOriginalCost"
+                  @update:modelValue="(val) => formData.assetOriginalCost = formatNumberInput(val)"
                   required
                   @blur="validateField('assetOriginalCost')"
                   textAlign="right"
@@ -172,7 +173,8 @@
                   class="asset-form__input--1"
                   label="Giá trị hao mòn năm"
                   required
-                  v-model="formData.assetAnnualDepreciation"
+                  :modelValue="formData.assetAnnualDepreciation"
+                  @update:modelValue="(val) => formData.assetAnnualDepreciation = formatNumberInput(val)"
                   :error="!!errors.assetAnnualDepreciation"
                   :errorMessage="errors.assetAnnualDepreciation"
                   @blur="validateField('assetAnnualDepreciation')"
@@ -366,6 +368,22 @@ const errors = ref({
 const departments = ref([])
 const assetTypes = ref([])
 
+const formatNumberInput = (value) => {
+  if (value === null || value === undefined || value === '') return ''
+  // Xóa tất cả ký tự không phải số
+  const cleanValue = value.toString().replace(/\D/g, '')
+  // Format theo định dạng vi-VN
+  return new Intl.NumberFormat('vi-VN').format(cleanValue)
+}
+
+// --- THÊM MỚI: Hàm chuyển chuỗi format về số để tính toán (VD: 1.000 -> 1000) ---
+const parseNumber = (value) => {
+  if (!value) return 0
+  if (typeof value === 'number') return value
+  // Xóa dấu chấm trước khi parse
+  return Number(value.toString().replace(/\./g, ''))
+}
+
 const handleCloseModal = () => {
   if (isEditMode.value) {
     confirmDialog.value = {
@@ -444,7 +462,7 @@ const validateForm = () => {
     errors.value.assetQuantity = 'Số lượng phải lớn hơn 0'
     isValid = false
   }
-  if (!formData.value.assetOriginalCost || formData.value.assetOriginalCost <= 0) {
+  if (!formData.value.assetOriginalCost || parseNumber(formData.value.assetOriginalCost) <= 0) {
     errors.value.assetOriginalCost = 'Nguyên giá phải lớn hơn 0'
     isValid = false
   }
@@ -464,7 +482,7 @@ const validateForm = () => {
     errors.value.depreciationRate = 'Tỉ lệ hao mòn không được để trống'
     isValid = false
   }
-  if (!formData.value.assetAnnualDepreciation || formData.value.assetAnnualDepreciation <= 0) {
+  if (!formData.value.assetAnnualDepreciation || parseNumber(formData.value.assetAnnualDepreciation) <= 0) {
     errors.value.assetAnnualDepreciation = 'Giá trị hao mòn năm không được để trống'
     isValid = false
   }
@@ -524,7 +542,7 @@ const validateField = (fieldName) => {
       break
 
     case 'assetOriginalCost':
-      if (!formData.value.assetOriginalCost || formData.value.assetOriginalCost <= 0) {
+      if (!formData.value.assetOriginalCost || parseNumber(formData.value.assetOriginalCost) <= 0) {
         errors.value.assetOriginalCost = 'Nguyên giá phải lớn hơn 0'
       } else {
         errors.value.assetOriginalCost = ''
@@ -567,7 +585,7 @@ const validateField = (fieldName) => {
       break
 
     case 'assetAnnualDepreciation':
-      if (!formData.value.assetAnnualDepreciation || formData.value.assetAnnualDepreciation <= 0) {
+      if (!formData.value.assetAnnualDepreciation || parseNumber(formData.value.assetAnnualDepreciation) <= 0) {
         errors.value.assetAnnualDepreciation = 'Giá trị hao mòn năm không được để trống'
       } else {
         errors.value.assetAnnualDepreciation = ''
@@ -610,8 +628,8 @@ const validateDepreciationRate = () => {
  * Validate: Hao mòn năm <= Nguyên giá
  */
 const validateAnnualDepreciation = () => {
-  const originalCost = Number(formData.value.assetOriginalCost)
-  const annualDepreciation = Number(formData.value.assetAnnualDepreciation)
+  const originalCost = parseNumber(formData.value.assetOriginalCost)
+  const annualDepreciation = parseNumber(formData.value.assetAnnualDepreciation)
 
   if (originalCost > 0 && annualDepreciation > originalCost) {
     errors.value.assetAnnualDepreciation = 'Hao mòn năm phải nhỏ hơn hoặc bằng nguyên giá'
@@ -681,9 +699,10 @@ const handleAssetTypeChange = (selectedOption) => {
 }
 
 const calculateAnnualDepreciation = () => {
-  const cost = Number(formData.value.assetOriginalCost) || 0
+  const cost = parseNumber(formData.value.assetOriginalCost) || 0
   const rate = Number(formData.value.depreciationRate) || 0
-  formData.value.assetAnnualDepreciation = (cost * rate) / 100
+  // Tính toán xong format lại thành chuỗi để hiển thị
+  formData.value.assetAnnualDepreciation = formatNumberInput((cost * rate) / 100)
 }
 
 watch(
@@ -775,8 +794,8 @@ const handleSave = async () => {
       assetUsageStartDate: formData.value.assetUsageStartDate,
       assetTrackingStartYear: Number(formData.value.assetTrackingStartYear),
       assetQuantity: Number(formData.value.assetQuantity),
-      assetOriginalCost: Number(formData.value.assetOriginalCost),
-      assetAnnualDepreciation: Number(formData.value.assetAnnualDepreciation),
+      assetOriginalCost: parseNumber(formData.value.assetOriginalCost),
+      assetAnnualDepreciation: parseNumber(formData.value.assetAnnualDepreciation),
       departmentId: formData.value.departmentId,
       assetTypeId: formData.value.assetTypeId,
       assetUsageYear: Number(formData.value.assetUsageYear),
@@ -860,8 +879,8 @@ const loadAssetData = async () => {
       assetUsageStartDate: props.assetData.assetUsageStartDate,
       assetTrackingStartYear: props.assetData.assetTrackingStartYear,
       assetQuantity: props.assetData.assetQuantity,
-      assetOriginalCost: props.assetData.assetOriginalCost,
-      assetAnnualDepreciation: props.assetData.assetAnnualDepreciation,
+      assetOriginalCost: formatNumberInput(props.assetData.assetOriginalCost),
+      assetAnnualDepreciation: formatNumberInput(props.assetData.assetAnnualDepreciation),
       departmentId: props.assetData.departmentId,
       departmentName: '',
       assetTypeId: props.assetData.assetTypeId,

@@ -82,6 +82,8 @@
             :key="asset.assetId"
             @mouseenter="hoveredRow = index"
             @mouseleave="hoveredRow = null"
+            @click="handleRowClick(asset, index, $event)"
+            :class="{ 'selected-row': selectedAssets.includes(asset.assetId) }"
           >
             <td class="asset-list__checkbox-col">
               <input
@@ -89,7 +91,7 @@
                 class="asset-list__checkbox"
                 :value="asset.assetId"
                 v-model="selectedAssets"
-                @click.stop
+                @click.stop="lastSelectedIndex = index"
               />
             </td>
             <td>{{ index + 1 }}</td>
@@ -174,27 +176,27 @@
                 </div>
               </div>
             </td>
-            
+
             <!-- Cột Số lượng -->
-            <td class="asset-list__footer-cell" style="text-align: center; padding: 7px;">
+            <td class="asset-list__footer-cell" style="text-align: center; padding: 7px">
               <strong>{{ formatNumber(totalQuantity) }}</strong>
             </td>
-            
+
             <!-- Cột Nguyên giá -->
-            <td class="asset-list__footer-cell" style="text-align: right; padding: 7px;">
+            <td class="asset-list__footer-cell" style="text-align: right; padding: 7px">
               <strong>{{ formatCurrency(totalOriginalCost) }}</strong>
             </td>
-            
+
             <!-- Cột HM/KH lũy kế -->
-            <td class="asset-list__footer-cell" style="text-align: right; padding: 7px;">
+            <td class="asset-list__footer-cell" style="text-align: right; padding: 7px">
               <strong>{{ formatCurrency(totalAccumulatedDepreciation) }}</strong>
             </td>
-            
+
             <!-- Cột Giá trị còn lại -->
-            <td class="asset-list__footer-cell" style="text-align: right; padding: 7px;">
+            <td class="asset-list__footer-cell" style="text-align: right; padding: 7px">
               <strong>{{ formatCurrency(totalRemainingValue) }}</strong>
             </td>
-            
+
             <!-- Cột Chức năng (để trống) -->
             <td class="asset-list__footer-cell"></td>
           </tr>
@@ -312,6 +314,14 @@
   display: flex;
   flex-direction: column;
 
+  height: 575px;
+  overflow: auto; // Cho phép cuộn khi nội dung dài
+  background-color: #ffffff;
+  border-radius: 3.5px;
+  border: 1px solid #afafaf;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.16);
+  position: relative;
+
   &__footer-pagesize {
     width: 70px;
 
@@ -374,20 +384,26 @@
 
   &__table {
     width: 100%;
-    background-color: #ffffff;
-    border-radius: 3.5px;
-    border: 1px solid #afafaf;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.16);
-    height: 575px;
-    overflow: hidden;
+    min-height: 100%;
     border-collapse: collapse;
     table-layout: fixed;
 
     tbody tr {
       cursor: pointer;
+      transition: background-color 0.2s;
 
       &:hover {
         background-color: rgba(26, 164, 200, 0.2);
+      }
+
+      &.selected-row {
+        background-color: rgba(26, 164, 200, 0.25); // Màu đậm hơn hover một chút
+        
+        // Nếu muốn checkbox cũng nổi bật hơn
+        td:first-child {
+           border-left: 4px solid #1aa4c8; // Thêm vạch màu bên trái để dễ nhìn
+           padding-left: 3px; // Trừ đi độ dày border để không bị lệch
+        }
       }
     }
 
@@ -400,6 +416,11 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      box-shadow: 0 1px 0 #c7c7c7;
 
       &:nth-child(3),
       &:nth-child(4),
@@ -449,6 +470,18 @@
       &:nth-child(11) {
         text-align: right;
       }
+    }
+
+    tfoot td {
+      // 4. Ghim Footer xuống đáy khi cuộn
+      position: sticky;
+      bottom: 0;
+      z-index: 10;
+      background-color: #ffffff; // Bắt buộc có màu nền để che nội dung trôi qua
+      box-shadow: 0 -1px 0 #c7c7c7; // Tạo đường kẻ trên giả cho footer
+      
+      // Giữ lại fix lỗi dropdown bị che
+      overflow: visible; 
     }
   }
 
@@ -617,8 +650,7 @@ const pageSizeOptions = [
   { value: 100, text: '100' },
 ]
 
-function handlePageSizeChange(option) {
-  pageSize.value = option.value
+function handlePageSizeChange() {
   pageNumber.value = 1
   fetchAssets()
 }
@@ -942,6 +974,45 @@ async function fetchAssetTypes() {
     }
   } catch (error) {
     console.error('Error fetching asset types:', error)
+  }
+}
+
+const lastSelectedIndex = ref(null)
+
+function handleRowClick(asset, index, event) {
+  const assetId = asset.assetId
+
+  // 1. Nếu giữ phím Ctrl (hoặc Command trên Mac)
+  if (event.ctrlKey || event.metaKey) {
+    if (selectedAssets.value.includes(assetId)) {
+      // Nếu đã chọn -> Bỏ chọn
+      selectedAssets.value = selectedAssets.value.filter((id) => id !== assetId)
+    } else {
+      // Nếu chưa chọn -> Thêm vào
+      selectedAssets.value.push(assetId)
+    }
+    lastSelectedIndex.value = index
+  }
+  // 2. Nếu giữ phím Shift
+  else if (event.shiftKey && lastSelectedIndex.value !== null) {
+    const start = Math.min(lastSelectedIndex.value, index)
+    const end = Math.max(lastSelectedIndex.value, index)
+    
+    // Lấy danh sách ID trong khoảng từ start đến end
+    const rangeIds = assets.value.slice(start, end + 1).map((a) => a.assetId)
+    
+    // Gộp vào danh sách đang chọn (dùng Set để tránh trùng lặp)
+    const uniqueIds = new Set([...selectedAssets.value, ...rangeIds])
+    selectedAssets.value = Array.from(uniqueIds)
+    
+    // Không cập nhật lastSelectedIndex khi dùng Shift để có thể mở rộng vùng chọn tiếp
+  }
+  // 3. Click thường (chỉ chọn 1 dòng)
+  else {
+    // Nếu click vào dòng đã chọn thì không làm gì (để tránh bỏ chọn nhầm khi muốn drag/drop sau này)
+    // Nhưng ở đây ta làm giống Windows: Click thường sẽ reset chọn duy nhất dòng đó
+    selectedAssets.value = [assetId]
+    lastSelectedIndex.value = index
   }
 }
 
