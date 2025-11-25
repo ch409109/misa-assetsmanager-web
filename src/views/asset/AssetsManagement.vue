@@ -82,7 +82,6 @@
             :key="asset.assetId"
             @mouseenter="hoveredRow = index"
             @mouseleave="hoveredRow = null"
-            @click="handleRowClick(asset, index, $event)"
             :class="{ 'selected-row': selectedAssets.includes(asset.assetId) }"
           >
             <td class="asset-list__checkbox-col">
@@ -397,12 +396,7 @@
       }
 
       &.selected-row {
-        background-color: rgba(26, 164, 200, 0.25); 
-
-        td:first-child {
-          border-left: 4px solid #1aa4c8; 
-          padding-left: 3px; 
-        }
+        background-color: rgba(26, 164, 200, 0.25);
       }
     }
 
@@ -475,7 +469,7 @@
       position: sticky;
       bottom: 0;
       z-index: 10;
-      background-color: #ffffff; 
+      background-color: #ffffff;
       box-shadow: 0 -1px 0 #c7c7c7;
 
       overflow: visible;
@@ -621,12 +615,14 @@ import AssetTypeAPI from '@/apis/modules/AssetTypeAPI.js'
 import MsInput from '@/components/ms-input/MsInput.vue'
 import MsConfirmDialog from '@/components/ms-dialog/MsConfirmDialog.vue'
 import MsButton from '@/components/ms-button/MsButton.vue'
+import { formatCurrency, formatNumber } from '@/utils/formatters.js'
+import { usePagination } from '@/composables/usePagination.js'
+import { useSelection } from '@/composables/useSelection.js'
 
 const showAddAssetModal = ref(false)
 const selectedAsset = ref(null)
 const isDuplicateMode = ref(false)
 const assets = ref([])
-const totalCount = ref(0)
 const loading = ref(false)
 const hoveredRow = ref(null)
 
@@ -635,22 +631,35 @@ const totalOriginalCost = ref(0)
 const totalAccumulatedDepreciation = ref(0)
 const totalRemainingValue = ref(0)
 
-const selectedAssets = ref([])
+const {
+  selectedItems: selectedAssets,
+  lastSelectedIndex,
+  isAllSelected,
+  toggleSelectAll,
+  clearSelection,
+} = useSelection({
+  getItems: () => assets.value,
+  idField: 'assetId',
+})
 
-const pageSize = ref(12)
-const pageNumber = ref(1)
-
-const pageSizeOptions = [
-  { value: 12, text: '12' },
-  { value: 20, text: '20' },
-  { value: 50, text: '50' },
-  { value: 100, text: '100' },
-]
-
-function handlePageSizeChange() {
-  pageNumber.value = 1
-  fetchAssets()
-}
+const {
+  pageSize,
+  pageNumber,
+  totalCount,
+  pageSizeOptions,
+  totalPages,
+  displayPages,
+  handlePageSizeChange,
+  goToPage,
+  previousPage,
+  nextPage,
+  resetPagination,
+  setTotalCount,
+} = usePagination({
+  defaultPageSize: 12,
+  defaultPageNumber: 1,
+  fetchData: fetchAssets,
+})
 
 const filters = ref({
   assetTypeId: '',
@@ -704,7 +713,7 @@ function handleSearchInput() {
   }
 
   searchTimeout = setTimeout(() => {
-    pageNumber.value = 1
+    resetPagination()
     fetchAssets()
   }, 500)
 }
@@ -726,43 +735,8 @@ const assetTypeFilterOptions = computed(() => [
 ])
 
 function handleFilterChange() {
-  pageNumber.value = 1
+  resetPagination()
   fetchAssets()
-}
-
-const totalPages = computed(() => {
-  return Math.ceil(totalCount.value / pageSize.value)
-})
-
-const displayPages = computed(() => {
-  const pages = []
-  const maxPagesToShow = 5
-  const half = Math.floor(maxPagesToShow / 2)
-
-  let start = Math.max(1, pageNumber.value - half)
-  let end = Math.min(totalPages.value, start + maxPagesToShow - 1)
-
-  if (end - start < maxPagesToShow - 1) {
-    start = Math.max(1, end - maxPagesToShow + 1)
-  }
-
-  for (let i = start; i <= end; i++) {
-    pages.push(i)
-  }
-
-  return pages
-})
-
-const isAllSelected = computed(() => {
-  return assets.value.length > 0 && selectedAssets.value.length === assets.value.length
-})
-
-function toggleSelectAll(event) {
-  if (event.target.checked) {
-    selectedAssets.value = assets.value.map((asset) => asset.assetId)
-  } else {
-    selectedAssets.value = []
-  }
 }
 
 async function handleDeleteMultiple() {
@@ -778,7 +752,7 @@ async function handleDeleteMultiple() {
         type: 'success',
       })
 
-      selectedAssets.value = []
+      clearSelection()
       await fetchAssets()
     } else {
       handleShowToast({
@@ -881,27 +855,6 @@ function handleShowToast({ message, type }) {
   }
 }
 
-function goToPage(page) {
-  if (page >= 1 && page <= totalPages.value) {
-    pageNumber.value = page
-    fetchAssets()
-  }
-}
-
-function previousPage() {
-  if (pageNumber.value > 1) {
-    pageNumber.value--
-    fetchAssets()
-  }
-}
-
-function nextPage() {
-  if (pageNumber.value < totalPages.value) {
-    pageNumber.value++
-    fetchAssets()
-  }
-}
-
 async function fetchAssets() {
   loading.value = true
   try {
@@ -936,7 +889,7 @@ async function fetchAssets() {
 
     if (response.data.success) {
       assets.value = response.data.data.data
-      totalCount.value = response.data.data.totalCount
+      setTotalCount(response.data.data.totalCount)
 
       totalQuantity.value = response.data.data.totalQuantity
       totalOriginalCost.value = response.data.data.totalOriginalCost
@@ -974,43 +927,9 @@ async function fetchAssetTypes() {
   }
 }
 
-const lastSelectedIndex = ref(null)
-
-function handleRowClick(asset, index, event) {
-  const assetId = asset.assetId
-
-  if (event.ctrlKey || event.metaKey) {
-    if (selectedAssets.value.includes(assetId)) {
-      selectedAssets.value = selectedAssets.value.filter((id) => id !== assetId)
-    } else {
-      selectedAssets.value.push(assetId)
-    }
-    lastSelectedIndex.value = index
-  } else if (event.shiftKey && lastSelectedIndex.value !== null) {
-    const start = Math.min(lastSelectedIndex.value, index)
-    const end = Math.max(lastSelectedIndex.value, index)
-
-    const rangeIds = assets.value.slice(start, end + 1).map((a) => a.assetId)
-
-    const uniqueIds = new Set([...selectedAssets.value, ...rangeIds])
-    selectedAssets.value = Array.from(uniqueIds)
-  } else {
-    selectedAssets.value = [assetId]
-    lastSelectedIndex.value = index
-  }
-}
-
-function formatCurrency(value) {
-  return new Intl.NumberFormat('vi-VN').format(value)
-}
-
-function formatNumber(value) {
-  return new Intl.NumberFormat('vi-VN').format(value)
-}
-
 onMounted(() => {
   fetchAssets()
   fetchDepartments()
   fetchAssetTypes()
 })
-</script>
+</script> 
