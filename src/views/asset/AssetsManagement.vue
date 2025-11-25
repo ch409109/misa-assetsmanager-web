@@ -121,60 +121,82 @@
         </tbody>
         <tfoot>
           <tr>
-            <td colspan="3" class="asset-list__footer-cell">
+            <!-- Gộp 6 cột đầu tiên (Checkbox, STT, Mã, Tên, Loại, Bộ phận) cho phần phân trang -->
+            <td colspan="6" class="asset-list__footer-cell asset-list__footer-left-cell">
               <div class="asset-list__footer-left">
                 <span
                   >Tổng số: <strong>{{ totalCount }}</strong> bản ghi</span
                 >
-                <select
-                  class="asset-list__footer-select"
-                  :value="pageSize"
-                  @change="changePageSize"
-                >
-                  <option :value="20">20</option>
-                  <option :value="50">50</option>
-                  <option :value="100">100</option>
-                </select>
+                <div class="asset-list__footer-pagesize">
+                  <MsSelect
+                    :options="pageSizeOptions"
+                    v-model="pageSize"
+                    @change="handlePageSizeChange"
+                  />
+                </div>
+                <div class="asset-list__footer-pagination">
+                  <div
+                    class="pagination-item"
+                    :class="{ disabled: pageNumber === 1 }"
+                    @click="previousPage"
+                  >
+                    <span class="icon icon-arrow-left"></span>
+                  </div>
+                  <div
+                    v-for="page in displayPages"
+                    :key="page"
+                    class="pagination-item"
+                    :class="{ active: page === pageNumber }"
+                    @click="goToPage(page)"
+                  >
+                    {{ page }}
+                  </div>
+                  <span
+                    v-if="displayPages[displayPages.length - 1] < totalPages"
+                    class="pagination-dots"
+                  >
+                    ...
+                  </span>
+                  <div
+                    v-if="displayPages[displayPages.length - 1] < totalPages"
+                    class="pagination-item"
+                    @click="goToPage(totalPages)"
+                  >
+                    {{ totalPages }}
+                  </div>
+                  <div
+                    class="pagination-item"
+                    :class="{ disabled: pageNumber === totalPages }"
+                    @click="nextPage"
+                  >
+                    <span class="icon icon-arrow-right"></span>
+                  </div>
+                </div>
               </div>
             </td>
-            <td colspan="2" class="asset-list__footer-cell asset-list__footer-center">
-              <div class="asset-list__footer-pagination">
-                <button @click="previousPage" :disabled="pageNumber === 1">&lt;</button>
-                <button
-                  v-for="page in displayPages"
-                  :key="page"
-                  @click="goToPage(page)"
-                  :class="{ active: page === pageNumber }"
-                >
-                  {{ page }}
-                </button>
-                <span v-if="displayPages[displayPages.length - 1] < totalPages">...</span>
-                <button
-                  v-if="displayPages[displayPages.length - 1] < totalPages"
-                  @click="goToPage(totalPages)"
-                >
-                  {{ totalPages }}
-                </button>
-                <button @click="nextPage" :disabled="pageNumber === totalPages">&gt;</button>
-              </div>
+            
+            <!-- Cột Số lượng -->
+            <td class="asset-list__footer-cell" style="text-align: center; padding: 7px;">
+              <strong>{{ formatNumber(totalQuantity) }}</strong>
             </td>
-            <td colspan="1"></td>
-            <td colspan="5" class="asset-list__footer-cell asset-list__footer-right">
-              <div class="asset-list__footer-summary">
-                <span
-                  ><strong>{{ formatNumber(totalQuantity) }}</strong></span
-                >
-                <span
-                  ><strong>{{ formatCurrency(totalOriginalCost) }}</strong></span
-                >
-                <span
-                  ><strong>{{ formatCurrency(totalAccumulatedDepreciation) }}</strong></span
-                >
-                <span
-                  ><strong>{{ formatCurrency(totalRemainingValue) }}</strong></span
-                >
-              </div>
+            
+            <!-- Cột Nguyên giá -->
+            <td class="asset-list__footer-cell" style="text-align: right; padding: 7px;">
+              <strong>{{ formatCurrency(totalOriginalCost) }}</strong>
             </td>
+            
+            <!-- Cột HM/KH lũy kế -->
+            <td class="asset-list__footer-cell" style="text-align: right; padding: 7px;">
+              <strong>{{ formatCurrency(totalAccumulatedDepreciation) }}</strong>
+            </td>
+            
+            <!-- Cột Giá trị còn lại -->
+            <td class="asset-list__footer-cell" style="text-align: right; padding: 7px;">
+              <strong>{{ formatCurrency(totalRemainingValue) }}</strong>
+            </td>
+            
+            <!-- Cột Chức năng (để trống) -->
+            <td class="asset-list__footer-cell"></td>
           </tr>
         </tfoot>
       </table>
@@ -289,6 +311,32 @@
 .asset-list {
   display: flex;
   flex-direction: column;
+
+  &__footer-pagesize {
+    width: 70px;
+
+    ::v-deep .ms-input__wrapper {
+      gap: 0;
+    }
+
+    ::v-deep .ms-select {
+      height: 28px;
+
+      &__trigger {
+        height: 28px;
+        padding: 4px 8px;
+        min-height: unset;
+      }
+
+      &__text {
+        font-size: 13px;
+      }
+
+      &__dropdown {
+        max-height: 200px;
+      }
+    }
+  }
 
   th:nth-child(1) {
     width: 25px;
@@ -459,45 +507,63 @@
     vertical-align: middle;
   }
 
+  &__footer-left-cell {
+    padding-right: 0;
+  }
+
   &__footer-left {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
     font-size: 14px;
     padding-left: 6px;
   }
 
-  &__footer-select {
-    margin-left: 8px;
-    background-color: #ffffff;
-    border-radius: 2.625px;
-    border: 1px solid #afafaf;
-    width: 59px;
-    height: 25px;
-    overflow: hidden;
-  }
-
   &__footer-center {
     text-align: center;
+    padding-left: 0;
+    padding-right: 0;
   }
 
   &__footer-pagination {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 4px;
+    margin-left: 0;
 
-    button {
-      border: 1px solid #afafaf;
-      border-radius: 3px;
-      padding: 4px 8px;
-      background-color: #ffffff;
+    .pagination-item {
+      padding: 6px 10px;
+      background-color: transparent;
       cursor: pointer;
       min-width: 32px;
+      text-align: center;
+      font-size: 13px;
+      color: #333;
+      border-radius: 3px;
+      user-select: none;
 
-      &:hover {
+      &:hover:not(.disabled):not(.active) {
         background-color: #f0f0f0;
       }
+
+      &.active {
+        background-color: #f5f5f5;
+        color: #000000ff;
+        font-weight: 600;
+      }
+
+      &.disabled {
+        cursor: not-allowed;
+        opacity: 0.4;
+        color: #999;
+      }
+    }
+
+    .pagination-dots {
+      padding: 6px 4px;
+      color: #999;
+      user-select: none;
     }
   }
 
@@ -543,6 +609,19 @@ const selectedAssets = ref([])
 
 const pageSize = ref(12)
 const pageNumber = ref(1)
+
+const pageSizeOptions = [
+  { value: 12, text: '12' },
+  { value: 20, text: '20' },
+  { value: 50, text: '50' },
+  { value: 100, text: '100' },
+]
+
+function handlePageSizeChange(option) {
+  pageSize.value = option.value
+  pageNumber.value = 1
+  fetchAssets()
+}
 
 const filters = ref({
   assetTypeId: '',
@@ -792,12 +871,6 @@ function nextPage() {
     pageNumber.value++
     fetchAssets()
   }
-}
-
-function changePageSize(event) {
-  pageSize.value = parseInt(event.target.value)
-  pageNumber.value = 1
-  fetchAssets()
 }
 
 async function fetchAssets() {

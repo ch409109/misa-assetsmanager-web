@@ -157,7 +157,7 @@ const handleValueChanged = (e) => {
         border-radius: 2.5px;
         font-size: 14px;
         padding: 0 14px;
-        border: 1px solid $color-border !important;
+        // border: 1px solid $color-border !important;
         color: $color-text-primary;
         background: transparent;
 

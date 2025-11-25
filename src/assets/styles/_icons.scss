@@ -115,3 +115,11 @@
     $height: 7px
   );
 }
+
+.icon-arrow-right {
+  @include icon-mask(-72px, -246px, $size: 8px, $height: 12px);
+}
+
+.icon-arrow-left {
+  @include icon-mask(-28px, -246px, $size: 8px, $height: 12px);
+}

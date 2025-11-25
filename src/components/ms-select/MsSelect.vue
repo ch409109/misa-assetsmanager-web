@@ -1,7 +1,7 @@
 <template>
   <div class="ms-input__wrapper">
     <label v-if="label" class="ms-input__label" :class="{ required: required }">{{ label }}</label>
-    <div class="ms-select" :class="{ disabled: disabled }">
+    <div class="ms-select" :class="{ disabled: disabled }" ref="selectContainerRef">
       <div
         class="ms-select__trigger"
         ref="selectTriggerRef"
@@ -12,9 +12,11 @@
           'has-prefix-icon': prefixIcon,
         }"
         @click="toggleDropdown"
+        @blur="handleBlur"
         tabindex="0"
         @keydown.enter.prevent="toggleDropdown"
         @keydown.space.prevent="toggleDropdown"
+        @keydown.esc="closeDropdown"
       >
         <i v-if="prefixIcon" :class="['ms-select__prefix-icon', 'icon', prefixIcon]"></i>
         <span class="ms-select__text" :class="{ 'text-placeholder': !selectedOption }">
@@ -22,7 +24,12 @@
         </span>
         <i class="icon icon-rectangle-down"></i>
       </div>
-      <div v-if="isOpen && !disabled" class="ms-select__dropdown">
+      <div 
+        v-if="isOpen && !disabled" 
+        class="ms-select__dropdown" 
+        :class="{ 'ms-select__dropdown--top': dropdownPosition === 'top' }"
+        ref="dropdownRef"
+      >
         <div class="options-list">
           <div
             v-for="option in options"
@@ -42,26 +49,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 
-/**
- * Component Select (Dropdown)
- * Created by: CongHT - 15/11/2025
- */
-
-/**
- * @const {object} props - Props của component MsSelect
- * @property {string} [label] - Nhãn (label) hiển thị phía trên select box.
- * @property {string|number} [modelValue] - Giá trị đang được chọn (hỗ trợ v-model).
- * @property {Array<object>} [options=[]] - Danh sách các tùy chọn. Mỗi
- * option là object { value: any, text: string }.
- * @property {string} [placeholder='Chọn'] - Text hiển thị khi chưa có giá trị nào được chọn.
- * @property {boolean} [required=false] - Hiển thị dấu * (bắt buộc) ở label.
- * @property {boolean} [disabled=false] - Vô hiệu hóa select box.
- * @property {string} [errorMessage] - Thông báo lỗi hiển thị bên dưới.
- * @property {string} [prefixIcon] - Tên class icon hiển thị ở phía trước text.
- * Created By: CongHT - 15/11/2025
- */
 const props = defineProps({
   label: String,
   modelValue: [String, Number],
@@ -79,30 +68,47 @@ const props = defineProps({
   prefixIcon: String,
 })
 
-/**
- * @const {Function} emit - Hàm emit sự kiện của Vue
- * @event update:modelValue - Phát ra khi giá trị thay đổi (cho v-model).
- * @event change - Phát ra khi người dùng chọn một option mới.
- * Created By: CongHT - 15/11/2025
- */
-const emit = defineEmits(['update:modelValue', 'change'])
+const emit = defineEmits(['update:modelValue', 'change', 'blur'])
 
-/**
- * @type {import('vue').Ref<boolean>}
- * @description Trạng thái mở/đóng của dropdown.
- * Created By: CongHT - 15/11/2025
- */
 const isOpen = ref(false)
+const dropdownPosition = ref('bottom') // 'top' hoặc 'bottom'
+const selectContainerRef = ref(null)
+const dropdownRef = ref(null)
 
-/**
- * @type {import('vue').ComputedRef<object|null>}
- * @description Tính toán object option ({value, text}) đang được chọn
- * dựa trên `modelValue`.
- * Created By: CongHT - 15/11/2025
- */
 const selectedOption = computed(() => {
   return props.options.find((opt) => opt.value === props.modelValue) || null
 })
+
+/**
+ * @description Tính toán vị trí hiển thị dropdown
+ * Created By: CongHT - 24/11/2025
+ */
+const calculateDropdownPosition = () => {
+  if (!selectContainerRef.value) return
+
+  const rect = selectContainerRef.value.getBoundingClientRect()
+  const windowHeight = window.innerHeight
+  const spaceBelow = windowHeight - rect.bottom
+  const spaceAbove = rect.top
+  
+  // Ước tính chiều cao dropdown (tối đa 300px)
+  const dropdownHeight = Math.min(props.options.length * 36 + 16, 300)
+  
+  // Nếu không đủ không gian bên dưới nhưng có đủ không gian bên trên
+  if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
+    dropdownPosition.value = 'top'
+  } else {
+    dropdownPosition.value = 'bottom'
+  }
+}
+
+/**
+ * @description Đóng dropdown
+ * Created By: CongHT - 24/11/2025
+ */
+const closeDropdown = () => {
+  isOpen.value = false
+}
 
 /**
  * @description Xử lý bật/tắt dropdown khi click vào trigger.
@@ -111,12 +117,17 @@ const selectedOption = computed(() => {
 const toggleDropdown = () => {
   if (!props.disabled) {
     isOpen.value = !isOpen.value
+    
+    if (isOpen.value) {
+      nextTick(() => {
+        calculateDropdownPosition()
+      })
+    }
   }
 }
 
 /**
  * @description Xử lý khi người dùng click chọn một option.
- * Emit sự kiện và đóng dropdown.
  * @param {object} option - Option ({value, text}) đã được chọn.
  * Created By: CongHT - 15/11/2025
  */
@@ -127,46 +138,42 @@ const selectOption = (option) => {
 }
 
 /**
+ * @description Xử lý sự kiện blur
+ * Created By: CongHT - 24/11/2025
+ */
+const handleBlur = (event) => {
+  setTimeout(() => {
+    isOpen.value = false
+    emit('blur', event)
+  }, 200)
+}
+
+/**
  * @description Xử lý sự kiện click bên ngoài component để đóng dropdown.
  * @param {MouseEvent} event - Sự kiện click.
  * Created By: CongHT - 15/11/2025
  */
 const handleClickOutside = (event) => {
   const target = event.target
-  // Nếu click không nằm trong component '.ms-select' này thì đóng dropdown
   if (!target.closest('.ms-select')) {
     isOpen.value = false
   }
 }
 
-/**
- * @description Lifecycle hook: Gắn listener 'click' khi component được mount.
- * Created By: CongHT - 15/11/2025
- */
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
+  window.addEventListener('scroll', calculateDropdownPosition, true)
+  window.addEventListener('resize', calculateDropdownPosition)
 })
 
-/**
- * @description Lifecycle hook: Gỡ listener 'click' khi component bị unmount.
- * Created By: CongHT - 15/11/2025
- */
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
+  window.removeEventListener('scroll', calculateDropdownPosition, true)
+  window.removeEventListener('resize', calculateDropdownPosition)
 })
 
-/**
- * @type {import('vue').Ref<HTMLElement|null>}
- * @description Tham chiếu (ref) đến <div> trigger (dùng để focus).
- * Created By: CongHT - 15/11/2025
- */
 const selectTriggerRef = ref(null)
 
-/**
- * @description Expose (cung cấp) hàm focus ra bên ngoài
- * để component cha có thể gọi.
- * Created By: CongHT - 15/11/2025
- */
 defineExpose({
   focus: () => {
     selectTriggerRef.value?.focus()
@@ -218,7 +225,7 @@ defineExpose({
     cursor: pointer;
     background: $color-bg-default;
 
-    &:hover {
+    &:hover:not(.disabled) {
       border-color: $color-border-hover;
     }
 
@@ -244,8 +251,8 @@ defineExpose({
   &__text {
     font-size: 13px;
     text-overflow: ellipsis;
-    white-space: nowrap; 
-    overflow: hidden; 
+    white-space: nowrap;
+    overflow: hidden;
     flex: 1;
 
     &.text-placeholder {
@@ -270,6 +277,15 @@ defineExpose({
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     z-index: 1000;
     padding: 8px 0;
+    margin-top: 2px;
+
+    // Khi hiển thị lên trên
+    &--top {
+      top: auto;
+      bottom: 100%;
+      margin-top: 0;
+      margin-bottom: 2px;
+    }
   }
 
   &__option {
