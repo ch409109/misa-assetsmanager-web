@@ -13,6 +13,13 @@
 </template>
 
 <script setup>
+/**
+ * Component hiển thị thông báo toast
+ * @component MsToast
+ * @description Hiển thị thông báo dạng toast ở góc trên bên phải màn hình
+ * 
+ * Created By CongHT - 26/11/2025
+ */
 import { ref, watch } from 'vue'
 
 const props = defineProps({
@@ -39,6 +46,11 @@ const emit = defineEmits(['close'])
 
 const visible = ref(props.show)
 
+/**
+ * Theo dõi props.show để hiển thị/ẩn toast và tự động đóng sau duration
+ * 
+ * Created By CongHT - 26/11/2025
+ */
 watch(
   () => props.show,
   (newVal) => {

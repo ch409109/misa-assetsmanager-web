@@ -673,6 +673,13 @@ const searchKeyword = ref('')
 let searchTimeout = null
 
 const showDeleteConfirm = ref(false)
+
+/**
+ * Tạo message xác nhận xóa tài sản dựa trên số lượng tài sản được chọn
+ * @returns {string} Message xác nhận xóa
+ * 
+ * Created By CongHT - 26/11/2025
+ */
 const deleteConfirmMessage = computed(() => {
   const count = selectedAssets.value.length
 
@@ -686,6 +693,12 @@ const deleteConfirmMessage = computed(() => {
   }
 })
 
+/**
+ * Hiển thị dialog xác nhận xóa nhiều tài sản
+ * @returns {void}
+ * 
+ * Created By CongHT - 26/11/2025
+ */
 function confirmDeleteMultiple() {
   if (selectedAssets.value.length === 0) {
     handleShowToast({
@@ -698,15 +711,33 @@ function confirmDeleteMultiple() {
   showDeleteConfirm.value = true
 }
 
+/**
+ * Xử lý khi người dùng xác nhận xóa tài sản
+ * @returns {Promise<void>}
+ * 
+ * Created By CongHT - 26/11/2025
+ */
 async function handleConfirmDelete() {
   showDeleteConfirm.value = false
   await handleDeleteMultiple()
 }
 
+/**
+ * Xử lý khi người dùng hủy xóa tài sản
+ * @returns {void}
+ * 
+ * Created By CongHT - 26/11/2025
+ */
 function handleCancelDelete() {
   showDeleteConfirm.value = false
 }
 
+/**
+ * Xử lý sự kiện nhập liệu tìm kiếm với debounce 500ms
+ * @returns {void}
+ * 
+ * Created By CongHT - 26/11/2025
+ */
 function handleSearchInput() {
   if (searchTimeout) {
     clearTimeout(searchTimeout)
@@ -718,6 +749,12 @@ function handleSearchInput() {
   }, 500)
 }
 
+/**
+ * Tạo danh sách options cho dropdown bộ phận sử dụng
+ * @returns {Array<{value: string, text: string}>} Danh sách options
+ * 
+ * Created By CongHT - 26/11/2025
+ */
 const departmentFilterOptions = computed(() => [
   { value: '', text: 'Bộ phận sử dụng' },
   ...departments.value.map((dept) => ({
@@ -726,6 +763,12 @@ const departmentFilterOptions = computed(() => [
   })),
 ])
 
+/**
+ * Tạo danh sách options cho dropdown loại tài sản
+ * @returns {Array<{value: string, text: string}>} Danh sách options
+ * 
+ * Created By CongHT - 26/11/2025
+ */
 const assetTypeFilterOptions = computed(() => [
   { value: '', text: 'Loại tài sản' },
   ...assetTypes.value.map((type) => ({
@@ -734,11 +777,23 @@ const assetTypeFilterOptions = computed(() => [
   })),
 ])
 
+/**
+ * Xử lý khi thay đổi bộ lọc, reset phân trang và tải lại dữ liệu
+ * @returns {void}
+ * 
+ * Created By CongHT - 26/11/2025
+ */
 function handleFilterChange() {
   resetPagination()
   fetchAssets()
 }
 
+/**
+ * Xóa nhiều tài sản đã được chọn
+ * @returns {Promise<void>}
+ * 
+ * Created By CongHT - 26/11/2025
+ */
 async function handleDeleteMultiple() {
   try {
     loading.value = true
@@ -771,12 +826,25 @@ async function handleDeleteMultiple() {
   }
 }
 
+/**
+ * Mở modal thêm mới tài sản
+ * @returns {void}
+ * 
+ * Created By CongHT - 26/11/2025
+ */
 function openAddAssetModal() {
   showAddAssetModal.value = true
   selectedAsset.value = null
   isDuplicateMode.value = false
 }
 
+/**
+ * Mở modal chỉnh sửa tài sản
+ * @param {Object} asset - Đối tượng tài sản cần chỉnh sửa
+ * @returns {Promise<void>}
+ * 
+ * Created By CongHT - 26/11/2025
+ */
 async function openEditModal(asset) {
   try {
     loading.value = true
@@ -804,6 +872,13 @@ async function openEditModal(asset) {
   }
 }
 
+/**
+ * Mở modal nhân bản tài sản
+ * @param {Object} asset - Đối tượng tài sản cần nhân bản
+ * @returns {Promise<void>}
+ * 
+ * Created By CongHT - 26/11/2025
+ */
 async function openDuplicateModal(asset) {
   try {
     loading.value = true
@@ -831,12 +906,24 @@ async function openDuplicateModal(asset) {
   }
 }
 
+/**
+ * Đóng modal thêm/sửa tài sản và reset trạng thái
+ * @returns {void}
+ * 
+ * Created By CongHT - 26/11/2025
+ */
 function closeModal() {
   showAddAssetModal.value = false
   selectedAsset.value = null
   isDuplicateMode.value = false
 }
 
+/**
+ * Xử lý sau khi lưu tài sản thành công, tải lại danh sách
+ * @returns {Promise<void>}
+ * 
+ * Created By CongHT - 26/11/2025
+ */
 async function handleAssetSaved() {
   await fetchAssets()
 }
@@ -847,6 +934,15 @@ const toast = ref({
   type: 'success',
 })
 
+/**
+ * Hiển thị thông báo toast
+ * @param {Object} options - Cấu hình toast
+ * @param {string} options.message - Nội dung thông báo
+ * @param {string} options.type - Loại thông báo (success/error/warning)
+ * @returns {void}
+ * 
+ * Created By CongHT - 26/11/2025
+ */
 function handleShowToast({ message, type }) {
   toast.value = {
     show: true,
@@ -855,6 +951,12 @@ function handleShowToast({ message, type }) {
   }
 }
 
+/**
+ * Lấy danh sách tài sản từ API với phân trang và bộ lọc
+ * @returns {Promise<void>}
+ * 
+ * Created By CongHT - 26/11/2025
+ */
 async function fetchAssets() {
   loading.value = true
   try {
@@ -905,6 +1007,12 @@ async function fetchAssets() {
   }
 }
 
+/**
+ * Lấy danh sách bộ phận sử dụng từ API
+ * @returns {Promise<void>}
+ * 
+ * Created By CongHT - 26/11/2025
+ */
 async function fetchDepartments() {
   try {
     const response = await DepartmentAPI.getAll()
@@ -916,6 +1024,12 @@ async function fetchDepartments() {
   }
 }
 
+/**
+ * Lấy danh sách loại tài sản từ API
+ * @returns {Promise<void>}
+ * 
+ * Created By CongHT - 26/11/2025
+ */
 async function fetchAssetTypes() {
   try {
     const response = await AssetTypeAPI.getAll()
@@ -932,4 +1046,4 @@ onMounted(() => {
   fetchDepartments()
   fetchAssetTypes()
 })
-</script> 
+</script>

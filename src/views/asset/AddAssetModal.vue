@@ -103,7 +103,9 @@
                   :error="!!errors.assetOriginalCost"
                   :errorMessage="errors.assetOriginalCost"
                   :modelValue="formData.assetOriginalCost"
-                  @update:modelValue="(val) => formData.assetOriginalCost = formatNumberInput(val)"
+                  @update:modelValue="
+                    (val) => (formData.assetOriginalCost = formatNumberInput(val))
+                  "
                   required
                   @blur="validateField('assetOriginalCost')"
                   textAlign="right"
@@ -174,7 +176,9 @@
                   label="Giá trị hao mòn năm"
                   required
                   :modelValue="formData.assetAnnualDepreciation"
-                  @update:modelValue="(val) => formData.assetAnnualDepreciation = formatNumberInput(val)"
+                  @update:modelValue="
+                    (val) => (formData.assetAnnualDepreciation = formatNumberInput(val))
+                  "
                   :error="!!errors.assetAnnualDepreciation"
                   :errorMessage="errors.assetAnnualDepreciation"
                   @blur="validateField('assetAnnualDepreciation')"
@@ -307,6 +311,7 @@ import AssetTypeAPI from '@/apis/modules/AssetTypeAPI.js'
 import AssetAPI from '@/apis/modules/AssetAPI.js'
 import MsConfirmDialog from '@/components/ms-dialog/MsConfirmDialog.vue'
 import MsButton from '@/components/ms-button/MsButton.vue'
+import {useAssetValidation} from '@/composables/useAssetValidation.js'
 
 const props = defineProps({
   assetData: {
@@ -321,6 +326,12 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'save', 'showToast'])
 
+/**
+ * Kiểm tra xem modal đang ở chế độ chỉnh sửa hay không
+ * @returns {boolean} True nếu đang ở chế độ chỉnh sửa
+ * 
+ * Created By CongHT - 26/11/2025
+ */
 const isEditMode = computed(() => !!props.assetData && !props.isDuplicateMode)
 
 const showConfirmDialog = ref(false)
@@ -350,40 +361,74 @@ const formData = ref({
   assetUsageYear: 0,
 })
 
-const errors = ref({
-  assetCode: '',
-  assetName: '',
-  assetPurchaseDate: '',
-  assetUsageStartDate: '',
-  assetTrackingStartYear: '',
-  assetQuantity: '',
-  assetOriginalCost: '',
-  assetAnnualDepreciation: '',
-  departmentId: '',
-  assetTypeId: '',
-  depreciationRate: '',
-  assetUsageYear: '',
-})
-
 const departments = ref([])
 const assetTypes = ref([])
 
+/**
+ * Format giá trị số thành chuỗi có định dạng số Việt Nam
+ * @param {string|number} value - Giá trị cần format
+ * @returns {string} Chuỗi đã được format
+ * 
+ * Created By CongHT - 26/11/2025
+ */
 const formatNumberInput = (value) => {
   if (value === null || value === undefined || value === '') return ''
-  // Xóa tất cả ký tự không phải số
   const cleanValue = value.toString().replace(/\D/g, '')
-  // Format theo định dạng vi-VN
   return new Intl.NumberFormat('vi-VN').format(cleanValue)
 }
 
-// --- THÊM MỚI: Hàm chuyển chuỗi format về số để tính toán (VD: 1.000 -> 1000) ---
+/**
+ * Chuyển đổi chuỗi có định dạng số thành số
+ * @param {string|number} value - Giá trị cần chuyển đổi
+ * @returns {number} Giá trị số
+ * 
+ * Created By CongHT - 26/11/2025
+ */
 const parseNumber = (value) => {
   if (!value) return 0
   if (typeof value === 'number') return value
-  // Xóa dấu chấm trước khi parse
   return Number(value.toString().replace(/\./g, ''))
 }
 
+/**
+ * Hiển thị dialog cảnh báo
+ * @param {string} title - Tiêu đề dialog
+ * @param {string} message - Nội dung thông báo
+ * @returns {void}
+ * 
+ * Created By CongHT - 26/11/2025
+ */
+const showWarningDialog = (title, message) => {
+  confirmDialog.value = {
+    title: title,
+    message: message,
+    type: 'warning',
+    confirmText: 'Đóng',
+    cancelText: '',
+    action: 'warning',
+  }
+  showConfirmDialog.value = true
+}
+
+const {
+  errors,
+  validateForm,
+  validateField,
+  validateDepreciationRate,
+  validateAnnualDepreciation,
+  setFieldError,
+} = useAssetValidation({
+  getFormData: () => formData.value,
+  parseNumber,
+  showWarningDialog,
+})
+
+/**
+ * Xử lý đóng modal với xác nhận nếu có thay đổi
+ * @returns {void}
+ * 
+ * Created By CongHT - 26/11/2025
+ */
 const handleCloseModal = () => {
   if (isEditMode.value) {
     confirmDialog.value = {
@@ -410,6 +455,12 @@ const handleCloseModal = () => {
   }
 }
 
+/**
+ * Xử lý khi người dùng xác nhận action trong dialog
+ * @returns {void}
+ * 
+ * Created By CongHT - 26/11/2025
+ */
 const handleConfirmAction = () => {
   if (confirmDialog.value.action === 'close-edit') {
     showConfirmDialog.value = false
@@ -422,10 +473,22 @@ const handleConfirmAction = () => {
   }
 }
 
+/**
+ * Xử lý khi người dùng hủy action trong dialog
+ * @returns {void}
+ * 
+ * Created By CongHT - 26/11/2025
+ */
 const handleCancelAction = () => {
   showConfirmDialog.value = false
 }
 
+/**
+ * Xử lý khi người dùng từ chối action trong dialog
+ * @returns {void}
+ * 
+ * Created By CongHT - 26/11/2025
+ */
 const handleRejectAction = () => {
   if (confirmDialog.value.action === 'close-edit') {
     showConfirmDialog.value = false
@@ -433,239 +496,12 @@ const handleRejectAction = () => {
   }
 }
 
-const validateForm = () => {
-  let isValid = true
-
-  // Reset errors
-  Object.keys(errors.value).forEach((key) => {
-    errors.value[key] = ''
-  })
-
-  // Validate required fields
-  if (!formData.value.assetCode || formData.value.assetCode.trim() === '') {
-    errors.value.assetCode = 'Mã tài sản không được để trống'
-    isValid = false
-  }
-  if (!formData.value.assetName || formData.value.assetName.trim() === '') {
-    errors.value.assetName = 'Tên tài sản không được để trống'
-    isValid = false
-  }
-  if (!formData.value.departmentId) {
-    errors.value.departmentId = 'Mã bộ phận sử dụng không được để trống'
-    isValid = false
-  }
-  if (!formData.value.assetTypeId) {
-    errors.value.assetTypeId = 'Mã loại tài sản không được để trống'
-    isValid = false
-  }
-  if (!formData.value.assetQuantity || formData.value.assetQuantity <= 0) {
-    errors.value.assetQuantity = 'Số lượng phải lớn hơn 0'
-    isValid = false
-  }
-  if (!formData.value.assetOriginalCost || parseNumber(formData.value.assetOriginalCost) <= 0) {
-    errors.value.assetOriginalCost = 'Nguyên giá phải lớn hơn 0'
-    isValid = false
-  }
-  if (!formData.value.assetPurchaseDate) {
-    errors.value.assetPurchaseDate = 'Ngày mua không được để trống'
-    isValid = false
-  }
-  if (!formData.value.assetUsageStartDate) {
-    errors.value.assetUsageStartDate = 'Ngày bắt đầu sử dụng không được để trống'
-    isValid = false
-  }
-  if (!formData.value.assetUsageYear || formData.value.assetUsageYear <= 0) {
-    errors.value.assetUsageYear = 'Số năm sử dụng phải lớn hơn 0'
-    isValid = false
-  }
-  if (!formData.value.depreciationRate) {
-    errors.value.depreciationRate = 'Tỉ lệ hao mòn không được để trống'
-    isValid = false
-  }
-  if (!formData.value.assetAnnualDepreciation || parseNumber(formData.value.assetAnnualDepreciation) <= 0) {
-    errors.value.assetAnnualDepreciation = 'Giá trị hao mòn năm không được để trống'
-    isValid = false
-  }
-
-  validateAnnualDepreciation()
-  validateDepreciationRate()
-
-  Object.keys(errors.value).forEach((key) => {
-    if (errors.value[key]) {
-      isValid = false
-    }
-  })
-
-  return isValid
-}
-
-const validateField = (fieldName) => {
-  switch (fieldName) {
-    case 'assetCode':
-      if (!formData.value.assetCode || formData.value.assetCode.trim() === '') {
-        errors.value.assetCode = 'Mã tài sản không được để trống'
-      } else {
-        errors.value.assetCode = ''
-      }
-      break
-
-    case 'assetName':
-      if (!formData.value.assetName || formData.value.assetName.trim() === '') {
-        errors.value.assetName = 'Tên tài sản không được để trống'
-      } else {
-        errors.value.assetName = ''
-      }
-      break
-
-    case 'departmentId':
-      if (!formData.value.departmentId) {
-        errors.value.departmentId = 'Mã bộ phận sử dụng không được để trống'
-      } else {
-        errors.value.departmentId = ''
-      }
-      break
-
-    case 'assetTypeId':
-      if (!formData.value.assetTypeId) {
-        errors.value.assetTypeId = 'Mã loại tài sản không được để trống'
-      } else {
-        errors.value.assetTypeId = ''
-      }
-      break
-
-    case 'assetQuantity':
-      if (!formData.value.assetQuantity || formData.value.assetQuantity <= 0) {
-        errors.value.assetQuantity = 'Số lượng phải lớn hơn 0'
-      } else {
-        errors.value.assetQuantity = ''
-      }
-      break
-
-    case 'assetOriginalCost':
-      if (!formData.value.assetOriginalCost || parseNumber(formData.value.assetOriginalCost) <= 0) {
-        errors.value.assetOriginalCost = 'Nguyên giá phải lớn hơn 0'
-      } else {
-        errors.value.assetOriginalCost = ''
-        validateAnnualDepreciation()
-      }
-      break
-
-    case 'depreciationRate':
-      if (!formData.value.depreciationRate) {
-        errors.value.depreciationRate = 'Tỉ lệ hao mòn không được để trống'
-      } else {
-        errors.value.depreciationRate = ''
-        validateDepreciationRate()
-      }
-      break
-
-    case 'assetPurchaseDate':
-      if (!formData.value.assetPurchaseDate) {
-        errors.value.assetPurchaseDate = 'Ngày mua không được để trống'
-      } else {
-        errors.value.assetPurchaseDate = ''
-      }
-      break
-
-    case 'assetUsageStartDate':
-      if (!formData.value.assetUsageStartDate) {
-        errors.value.assetUsageStartDate = 'Ngày bắt đầu sử dụng không được để trống'
-      } else {
-        errors.value.assetUsageStartDate = ''
-      }
-      break
-
-    case 'assetUsageYear':
-      if (!formData.value.assetUsageYear || formData.value.assetUsageYear <= 0) {
-        errors.value.assetUsageYear = 'Số năm sử dụng phải lớn hơn 0'
-      } else {
-        errors.value.assetUsageYear = ''
-        validateDepreciationRate()
-      }
-      break
-
-    case 'assetAnnualDepreciation':
-      if (!formData.value.assetAnnualDepreciation || parseNumber(formData.value.assetAnnualDepreciation) <= 0) {
-        errors.value.assetAnnualDepreciation = 'Giá trị hao mòn năm không được để trống'
-      } else {
-        errors.value.assetAnnualDepreciation = ''
-        validateAnnualDepreciation()
-      }
-      break
-  }
-}
-
-const validateDepreciationRate = () => {
-  const usageYear = Number(formData.value.assetUsageYear)
-  const depreciationRate = Number(formData.value.depreciationRate)
-
-  if (usageYear > 0 && depreciationRate > 0) {
-    const expectedRate = 100 / usageYear
-    const tolerance = 0.01 // Cho phép sai số nhỏ (0.01%)
-
-    if (Math.abs(depreciationRate - expectedRate) > tolerance) {
-      errors.value.depreciationRate = `Tỷ lệ hao mòn phải bằng 1/Số năm sử dụng (${expectedRate.toFixed(2)}%)`
-      errors.value.assetUsageYear = `Tỷ lệ hao mòn phải bằng 1/Số năm sử dụng (${expectedRate.toFixed(2)}%)`
-
-      // Hiển thị dialog cảnh báo
-      showWarningDialog(
-        'Tỷ lệ hao mòn phải bằng 1/Số năm sử dụng',
-        `Với số năm sử dụng là ${usageYear} năm, tỷ lệ hao mòn phải là ${expectedRate.toFixed(2)}%`,
-      )
-    } else {
-      // Xóa lỗi nếu hợp lệ
-      if (errors.value.depreciationRate.includes('Tỷ lệ hao mòn phải bằng')) {
-        errors.value.depreciationRate = ''
-      }
-      if (errors.value.assetUsageYear.includes('Tỷ lệ hao mòn phải bằng')) {
-        errors.value.assetUsageYear = ''
-      }
-    }
-  }
-}
-
 /**
- * Validate: Hao mòn năm <= Nguyên giá
+ * Tạo danh sách options cho dropdown bộ phận sử dụng
+ * @returns {Array<{value: string, text: string}>} Danh sách options
+ * 
+ * Created By CongHT - 26/11/2025
  */
-const validateAnnualDepreciation = () => {
-  const originalCost = parseNumber(formData.value.assetOriginalCost)
-  const annualDepreciation = parseNumber(formData.value.assetAnnualDepreciation)
-
-  if (originalCost > 0 && annualDepreciation > originalCost) {
-    errors.value.assetAnnualDepreciation = 'Hao mòn năm phải nhỏ hơn hoặc bằng nguyên giá'
-
-    // Hiển thị dialog cảnh báo
-    showWarningDialog(
-      'Hao mòn năm vượt quá nguyên giá',
-      `Hao mòn năm (${formatCurrency(annualDepreciation)}) phải nhỏ hơn hoặc bằng nguyên giá (${formatCurrency(originalCost)})`,
-    )
-  } else {
-    // Xóa lỗi nếu hợp lệ
-    if (errors.value.assetAnnualDepreciation === 'Hao mòn năm phải nhỏ hơn hoặc bằng nguyên giá') {
-      errors.value.assetAnnualDepreciation = ''
-    }
-  }
-}
-
-const showWarningDialog = (title, message) => {
-  confirmDialog.value = {
-    title: title,
-    message: message,
-    type: 'warning',
-    confirmText: 'Đóng',
-    cancelText: '',
-    action: 'warning',
-  }
-  showConfirmDialog.value = true
-}
-
-const formatCurrency = (value) => {
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND',
-  }).format(value)
-}
-
 const departmentOptions = computed(() =>
   departments.value.map((dept) => ({
     value: dept.departmentId,
@@ -673,6 +509,12 @@ const departmentOptions = computed(() =>
   })),
 )
 
+/**
+ * Tạo danh sách options cho dropdown loại tài sản
+ * @returns {Array<{value: string, text: string}>} Danh sách options
+ * 
+ * Created By CongHT - 26/11/2025
+ */
 const assetTypeOptions = computed(() =>
   assetTypes.value.map((type) => ({
     value: type.assetTypeId,
@@ -680,6 +522,14 @@ const assetTypeOptions = computed(() =>
   })),
 )
 
+/**
+ * Xử lý khi thay đổi bộ phận sử dụng, cập nhật tên bộ phận
+ * @param {Object} selectedOption - Option được chọn
+ * @param {string} selectedOption.value - ID của bộ phận
+ * @returns {void}
+ * 
+ * Created By CongHT - 26/11/2025
+ */
 const handleDepartmentChange = (selectedOption) => {
   const department = departments.value.find((dept) => dept.departmentId === selectedOption.value)
   if (department) {
@@ -687,6 +537,14 @@ const handleDepartmentChange = (selectedOption) => {
   }
 }
 
+/**
+ * Xử lý khi thay đổi loại tài sản, cập nhật thông tin liên quan
+ * @param {Object} selectedOption - Option được chọn
+ * @param {string} selectedOption.value - ID của loại tài sản
+ * @returns {void}
+ * 
+ * Created By CongHT - 26/11/2025
+ */
 const handleAssetTypeChange = (selectedOption) => {
   const assetType = assetTypes.value.find((type) => type.assetTypeId === selectedOption.value)
   if (assetType) {
@@ -698,10 +556,15 @@ const handleAssetTypeChange = (selectedOption) => {
   }
 }
 
+/**
+ * Tính toán giá trị hao mòn năm dựa trên nguyên giá và tỉ lệ hao mòn
+ * @returns {void}
+ * 
+ * Created By CongHT - 26/11/2025
+ */
 const calculateAnnualDepreciation = () => {
   const cost = parseNumber(formData.value.assetOriginalCost) || 0
   const rate = Number(formData.value.depreciationRate) || 0
-  // Tính toán xong format lại thành chuỗi để hiển thị
   formData.value.assetAnnualDepreciation = formatNumberInput((cost * rate) / 100)
 }
 
@@ -753,6 +616,12 @@ watch(
   },
 )
 
+/**
+ * Lấy danh sách bộ phận sử dụng từ API
+ * @returns {Promise<void>}
+ * 
+ * Created By CongHT - 26/11/2025
+ */
 const fetchDepartments = async () => {
   try {
     const response = await DepartmentAPI.getAll()
@@ -765,6 +634,12 @@ const fetchDepartments = async () => {
   }
 }
 
+/**
+ * Lấy danh sách loại tài sản từ API
+ * @returns {Promise<void>}
+ * 
+ * Created By CongHT - 26/11/2025
+ */
 const fetchAssetTypes = async () => {
   try {
     const response = await AssetTypeAPI.getAll()
@@ -777,6 +652,12 @@ const fetchAssetTypes = async () => {
   }
 }
 
+/**
+ * Xử lý lưu tài sản (thêm mới hoặc cập nhật)
+ * @returns {Promise<void>}
+ * 
+ * Created By CongHT - 26/11/2025
+ */
 const handleSave = async () => {
   if (!validateForm()) {
     emit('showToast', {
@@ -848,7 +729,7 @@ const handleSave = async () => {
         type: 'error',
       })
 
-      errors.value.assetCode = errorMessage
+      setFieldError('assetCode', errorMessage)
     } else {
       emit('showToast', {
         message: error.response?.data?.userMessage || 'Lỗi kết nối máy chủ',
@@ -858,6 +739,12 @@ const handleSave = async () => {
   }
 }
 
+/**
+ * Lấy mã tài sản mới từ API
+ * @returns {Promise<void>}
+ * 
+ * Created By CongHT - 26/11/2025
+ */
 const fetchNewAssetCode = async () => {
   try {
     const response = await AssetAPI.getNewAssetCode()
@@ -869,6 +756,12 @@ const fetchNewAssetCode = async () => {
   }
 }
 
+/**
+ * Load dữ liệu tài sản vào form (cho chế độ sửa hoặc nhân bản)
+ * @returns {Promise<void>}
+ * 
+ * Created By CongHT - 26/11/2025
+ */
 const loadAssetData = async () => {
   if (props.assetData) {
     formData.value = {
